@@ -20,15 +20,16 @@
 /*!
  * \file auto_scheduler/cost_model.h
  * \brief Cost model that estimates the performance of programs
-*/
+ */
 
 #ifndef TVM_AUTO_SCHEDULER_COST_MODEL_H_
 #define TVM_AUTO_SCHEDULER_COST_MODEL_H_
 
 #include <tvm/auto_scheduler/measure.h>
-#include <tvm/node/node.h>
 #include <tvm/node/container.h>
+#include <tvm/node/node.h>
 #include <tvm/runtime/packed_func.h>
+
 #include <vector>
 
 namespace tvm {
@@ -39,23 +40,14 @@ using runtime::PackedFunc;
 /*! \brief The base class for cost model */
 class CostModelNode : public Object {
  public:
-  // Update the cost model according to new measurement pairs
-  virtual void Update(const Array<MeasureInput>& inputs,
-                      const Array<MeasureResult>& results) = 0;
+  /*! \brief Update the cost model according to new measurement pairs. */
+  virtual void Update(const Array<MeasureInput>& inputs, const Array<MeasureResult>& results) = 0;
 
-  // Predict the scores of states
+  /*! \brief Predict the scores of states. */
   virtual void Predict(const SearchTask& task, const Array<State>& states,
-      std::vector<float>* scores) = 0;
+                       std::vector<float>* scores) = 0;
 
-  // Predict the scores of all stages in states
-  virtual void PredictStages(const SearchTask& task,
-                             const Array<State>& states,
-                             std::vector<float>* state_scores,
-                             std::vector<std::vector<float>>* stage_scores) {
-    LOG(FATAL) << "Not Implemented";
-  }
-
-  static constexpr const char *_type_key = "auto_scheduler.CostModel";
+  static constexpr const char* _type_key = "auto_scheduler.CostModel";
   TVM_DECLARE_BASE_OBJECT_INFO(CostModelNode, Object);
 };
 
@@ -65,16 +57,15 @@ class CostModel : public ObjectRef {
 };
 
 /*! \brief The cost model returns random value for all predictions */
-class RandomModelNode: public CostModelNode {
+class RandomModelNode : public CostModelNode {
  public:
   const PackedFunc* random_number_func;
 
-  void Update(const Array<MeasureInput>& inputs,
-              const Array<MeasureResult>& results) final;
+  void Update(const Array<MeasureInput>& inputs, const Array<MeasureResult>& results) final;
   void Predict(const SearchTask& task, const Array<State>& states,
-      std::vector<float>* scores) final;
+               std::vector<float>* scores) final;
 
-  static constexpr const char *_type_key = "auto_scheduler.RandomModel";
+  static constexpr const char* _type_key = "auto_scheduler.RandomModel";
   TVM_DECLARE_FINAL_OBJECT_INFO(RandomModelNode, CostModelNode);
 };
 
@@ -85,14 +76,16 @@ class RandomModelNode: public CostModelNode {
 class RandomModel : public CostModel {
  public:
   RandomModel();
-  explicit RandomModel(::tvm::runtime::ObjectPtr<::tvm::runtime::Object> n)
-      : CostModel(n) {}
-
-  RandomModelNode* operator->() const {
-    return static_cast<RandomModelNode*>(data_.get());
-  }
+  explicit RandomModel(::tvm::runtime::ObjectPtr<::tvm::runtime::Object> n) : CostModel(n) {}
 
   TVM_DEFINE_DEFAULT_COPY_MOVE_AND_ASSIGN(RandomModel);
+
+  const RandomModelNode* operator->() const {
+    return static_cast<const RandomModelNode*>(data_.get());
+  }
+
+  const RandomModelNode* get() const { return operator->(); }
+
   using ContainerType = RandomModelNode;
 };
 

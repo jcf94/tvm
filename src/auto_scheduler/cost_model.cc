@@ -23,16 +23,12 @@
  */
 
 #include <tvm/auto_scheduler/cost_model.h>
-
-#include <tvm/runtime/ndarray.h>
 #include <tvm/runtime/registry.h>
 
 #include <utility>
 
 namespace tvm {
 namespace auto_scheduler {
-
-using ::tvm::runtime::NDArray;
 
 TVM_REGISTER_OBJECT_TYPE(CostModelNode);
 TVM_REGISTER_OBJECT_TYPE(RandomModelNode);
@@ -48,8 +44,7 @@ void RandomNumber(TVMArgs args, TVMRetValue* rv) {
 
 RandomModel::RandomModel() {
   ObjectPtr<RandomModelNode> node = make_object<RandomModelNode>();
-  node->random_number_func =
-      runtime::Registry::Get("auto_scheduler.cost_model.random_number");
+  node->random_number_func = runtime::Registry::Get("auto_scheduler.cost_model.random_number");
   if (node->random_number_func == nullptr) {
     LOG(WARNING) << "auto_scheduler.cost_model.random_number is not registered, "
                  << "use C++ default random_number func instead.";
@@ -62,16 +57,13 @@ RandomModel::RandomModel() {
 void RandomModelNode::Update(const Array<MeasureInput>& inputs,
                              const Array<MeasureResult>& results) {}
 
-void RandomModelNode::Predict(const SearchTask& task,
-                              const Array<State>& states,
+void RandomModelNode::Predict(const SearchTask& task, const Array<State>& states,
                               std::vector<float>* scores) {
   scores->resize(states.size());
   (*random_number_func)(states.size(), static_cast<void*>(scores->data()));
 }
 
-TVM_REGISTER_GLOBAL("auto_scheduler.RandomModel").set_body_typed([]() {
-  return RandomModel();
-});
+TVM_REGISTER_GLOBAL("auto_scheduler.RandomModel").set_body_typed([]() { return RandomModel(); });
 
 }  // namespace auto_scheduler
 }  // namespace tvm

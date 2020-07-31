@@ -45,7 +45,7 @@ TVM_REGISTER_GLOBAL("auto_scheduler.SearchPolicyRunCallbacks")
     });
 
 TVM_REGISTER_GLOBAL("auto_scheduler.SearchPolicySetTask")
-    .set_body_typed([](SearchPolicy policy, SearchTask task) { policy->cur_task = task; });
+    .set_body_typed([](SearchPolicy policy, SearchTask task) { policy->search_task = task; });
 
 TVM_REGISTER_GLOBAL("auto_scheduler.SearchPolicySetVerbose")
     .set_body_typed([](SearchPolicy policy, int verbose) { policy->verbose = verbose; });
