@@ -79,7 +79,7 @@ State DoMultiLevelTiling(const State& state, int stage_id, const std::string& fo
           split_res =
               tmp_s.split(stage_id, iter, Array<Optional<Integer>>(tmp_n_space - 1, NullOpt));
           for (int i = 0; i < tmp_n_space; i++) {
-            space_levels[i].push_back(std::move(split_res[i]));
+            space_levels[i].push_back(split_res[i]);
           }
           spatial_split_step_ids->push_back(tmp_s->transform_steps.size() - 1);
         }
@@ -101,7 +101,7 @@ State DoMultiLevelTiling(const State& state, int stage_id, const std::string& fo
         } else {
           split_res = tmp_s.split(stage_id, iter, Array<Optional<Integer>>(n_reduce - 1, NullOpt));
           for (size_t i = 0; i < n_reduce; i++) {
-            reduce_levels[i].push_back(std::move(split_res[i]));
+            reduce_levels[i].push_back(split_res[i]);
           }
         }
       } else {
@@ -214,12 +214,12 @@ State FollowTiling(const State& state, int stage_id, const std::vector<int>& spl
             break;
         }
 
-        space_0.push_back(std::move(split_res[0]));
-        space_1.push_back(std::move(split_res[1]));
+        space_0.push_back(split_res[0]);
+        space_1.push_back(split_res[1]);
         if (n_split >= 2) {
-          space_2.push_back(std::move(split_res[2]));
+          space_2.push_back(split_res[2]);
           if (n_split == 3) {
-            space_3.push_back(std::move(split_res[3]));
+            space_3.push_back(split_res[3]);
           }
         }
         ct++;
