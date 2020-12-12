@@ -798,6 +798,64 @@ class StorageAlignStep : public Step {
   TVM_DEFINE_OBJECT_REF_METHODS(StorageAlignStep, Step, StorageAlignStepNode);
 };
 
+/*! \brief Tensorize step that corresponds to te::Schedule::tensorize
+ *  \Note This step takes a global registered function name as input. */
+class TensorizeStepNode: public StepNode {
+ public:
+  int iter_id;
+  String ti_func_name;
+
+  void WriteToRecord(dmlc::JSONWriter* writer) const final;
+
+  /*!
+   * \brief Apply the current step to State.
+   * \param state A mutable pointer to state, which will be updated.
+   * \return The iterator result after fuse.
+   * \note If the iterators to be fused have stages attached at them(by compute_at), the fused
+   * result will become the new attach point.
+   */
+  void ApplyToState(State* state) const;
+
+  /*!
+   * \brief Apply the current step to tvm.schedule.
+   * \param stages The list of current stages
+   * \param stage_to_axes A map that maps stage ot all its iterators.
+   * \return The iterator result after fuse.
+   */
+  void ApplyToSchedule(Array<te::Stage>* stages, StageToAxesMap* stage_to_axes) const;
+
+  /*!
+   * \brief Print the current step as equivalent python schedule API.
+   * \param stages The list of current stages
+   * \param stage_to_axes A map that maps stage ot all its iterators.
+   * \return Python schedule code.
+   */
+  String PrintAsPythonAPI(Array<te::Stage>* stages, StageToAxesMap* stage_to_axes) const;
+
+  static constexpr const char* record_prefix_str = "TS";
+
+  static constexpr const char* _type_key = "auto_scheduler.TensorizeStep";
+  TVM_DECLARE_FINAL_OBJECT_INFO(TensorizeStepNode, StepNode);
+};
+
+/*!
+ * \brief Managed reference to TensorizeStepNode.
+ * \sa TensorizeStepNode
+ */
+class TensorizeStep : public Step {
+ public:
+  TensorizeStep(int stage_id, int iter_id, String ti_func_name);
+
+  /*!
+   * \brief The constructor used to read a step record from JSONReader and create the
+   * corresponding step.
+   * \param reader The input JSONReader.
+   */
+  explicit TensorizeStep(dmlc::JSONReader* reader);
+
+  TVM_DEFINE_OBJECT_REF_METHODS(TensorizeStep, Step, TensorizeStepNode);
+};
+
 /********** Steps working on multiple stages **********/
 
 /*! \brief Compute at step that corresponds to te::Stage::compute_at */

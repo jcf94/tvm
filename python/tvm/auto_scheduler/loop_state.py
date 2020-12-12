@@ -420,6 +420,28 @@ class State:
             self.state_object, self._resolve_stage_id(stage), iterator, factor, offset
         )
 
+    def tensorize(self, stage, iterator, ti_func_name):
+        """ The `ti_func_name` corresponds to a global registered funcion
+        that returns a Tensorintrin
+
+        Parameters
+        ----------
+        stage_id : Union[int, Operation, Tensor]
+            The index of the stage to do storage align
+        iterator : Iterator
+            The iterator to be tensorized
+        ti_func_name : str
+            Tensorize intrinsic function name
+
+        Returns
+        -------
+        res_it : Iterator
+            The tensorized Iterator
+        """
+        self.state_object = _ffi_api.StateTensorize(
+            self.state_object, self._resolve_stage_id(stage), iterator, ti_func_name
+        )
+
     def compute_at(self, stage, target_stage, target_iter):
         """Schedule primitive corresponding to `te.Stage.compute_at`.
         See also the `te.Stage` for more details.

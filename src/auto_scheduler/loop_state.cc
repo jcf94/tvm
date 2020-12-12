@@ -310,6 +310,13 @@ void State::storage_align(int stage_id, const Iterator& it, int factor, int offs
   return step->ApplyToState(this);
 }
 
+void State::tensorize(int stage_id, const Iterator& it, String ti_func_name) {
+  const Stage& stage = operator->()->stages[stage_id];
+  TensorizeStep step = TensorizeStep(stage_id, GetIndex(stage->iters, it), ti_func_name);
+  CopyOnWrite()->transform_steps.push_back(step);
+  return step->ApplyToState(this);
+}
+
 void State::compute_at(int stage_id, int target_stage_id, const Iterator& target_iter) {
   const Stage& target_stage = operator->()->stages[target_stage_id];
   ComputeAtStep step =
@@ -524,6 +531,12 @@ TVM_REGISTER_GLOBAL("auto_scheduler.StateFollowFusedSplit")
 TVM_REGISTER_GLOBAL("auto_scheduler.StateStorageAlign")
     .set_body_typed([](State state, int stage_id, const Iterator& it, int factor, int offset) {
       state.storage_align(stage_id, it, factor, offset);
+      return state;
+    });
+
+TVM_REGISTER_GLOBAL("auto_scheduler.StateTensorize")
+    .set_body_typed([](State state, int stage_id, const Iterator& it, String ti_func_name) {
+      state.tensorize(stage_id, it, ti_func_name);
       return state;
     });
 

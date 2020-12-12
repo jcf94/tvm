@@ -386,6 +386,12 @@ class State : public ObjectRef {
    */
   TVM_DLL void storage_align(int stage_id, const Iterator& it, int factor, int offset);
 
+  /*!
+   * \brief
+   * \param
+   */
+  TVM_DLL void tensorize(int stage_id, const Iterator& it, String ti_func_name);
+
   /********** Step APIs working on multiple stages **********/
   /*!
    * \brief The schedule primitive corresponding to `te::Stage::compute_at`.

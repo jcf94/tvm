@@ -514,9 +514,47 @@ def test_rfactor():
     assert s2[C].iters[2].range.extent == 16
 
 
+@tvm._ffi.register_func
+def test_intrin_gemv():
+    m = 16
+    l = 64
+    a = te.placeholder((l,), name='a')
+    b = te.placeholder((l, m), name='b')
+    k = te.reduce_axis((0, l), name='k')
+    c = te.compute((m,), lambda i: te.sum(a[k] * b[k, i], axis=k), name='c')
+    Ab = tvm.tir.decl_buffer(a.shape, a.dtype, name="A",
+                             offset_factor=1, strides=[1])
+    Bb = tvm.tir.decl_buffer(b.shape, b.dtype, name="B",
+                             offset_factor=1, strides=[te.var("s0"), 1])
+    Cb = tvm.tir.decl_buffer(c.shape, c.dtype, name="C",
+                             offset_factor=1, strides=[1])
+    def intrin_func(ins, outs):
+        ib = tvm.tir.ir_builder.create()
+        aa, bb = ins
+        cc = outs[0]
+        ib.emit(tvm.tir.call_extern("float32", "gemv_update",
+                                    cc.access_ptr("w"),
+                                    aa.access_ptr("r"),
+                                    bb.access_ptr("r")))
+        return ib.get()
+    return te.decl_tensor_intrin(c.op, intrin_func, binds={a: Ab, b: Bb, c: Cb})
+
+def test_tensorize():
+    A, B, C = matmul_auto_scheduler_test(1024, 512, 64)
+    dag = auto_scheduler.ComputeDAG([A, B, C])
+    s0 = dag.get_init_state()
+
+    its = s0.split(C, s0[C].iters[1], [16])
+    s0.tensorize(C, its[1], "test_intrin_gemv")
+
+    sch, tensors = dag.apply_steps_from_state(s0)
+    print(tvm.lower(sch, tensors, simple_mode=True))
+
+
 if __name__ == "__main__":
     test_split_fuse_reorder_annotation()
     test_compute_at_root_inline()
     test_cache_read_write()
     test_follow_split_follow_fused_split()
     test_rfactor()
+    test_tensorize()

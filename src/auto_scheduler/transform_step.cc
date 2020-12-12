@@ -149,6 +149,9 @@ StepNode* Step::CopyOnWrite() {
     } else if (const auto& ps = as<StorageAlignStepNode>()) {
       auto n = make_object<StorageAlignStepNode>(*ps);
       ObjectPtr<Object>(std::move(n)).swap(data_);
+    } else if (const auto& ps = as<TensorizeStepNode>()) {
+      auto n = make_object<TensorizeStepNode>(*ps);
+      ObjectPtr<Object>(std::move(n)).swap(data_);
     } else if (const auto& ps = as<ComputeAtStepNode>()) {
       auto n = make_object<ComputeAtStepNode>(*ps);
       ObjectPtr<Object>(std::move(n)).swap(data_);
@@ -196,6 +199,8 @@ Step StepReadFromRecord(dmlc::JSONReader* reader) {
     return FollowFusedSplitStep(reader);
   } else if (name == StorageAlignStepNode::record_prefix_str) {
     return StorageAlignStep(reader);
+  } else if (name == TensorizeStepNode::record_prefix_str) {
+    return TensorizeStep(reader);
   } else if (name == ComputeAtStepNode::record_prefix_str) {
     return ComputeAtStep(reader);
   } else if (name == ComputeInlineStepNode::record_prefix_str) {
@@ -232,6 +237,8 @@ void StepApplyToState(const Step& step, State* state, const ComputeDAG& dag) {
     ps->ApplyToState(state);
   } else if (auto ps = step.as<StorageAlignStepNode>()) {
     ps->ApplyToState(state);
+  } else if (auto ps = step.as<TensorizeStepNode>()) {
+    ps->ApplyToState(state);
   } else if (auto ps = step.as<ComputeAtStepNode>()) {
     ps->ApplyToState(state);
   } else if (auto ps = step.as<ComputeInlineStepNode>()) {
@@ -266,6 +273,8 @@ void StepApplyToSchedule(const Step& step, Array<te::Stage>* stages, StageToAxes
   } else if (auto ps = step.as<FollowFusedSplitStepNode>()) {
     ps->ApplyToSchedule(stages, stage_to_axes, transform_steps);
   } else if (auto ps = step.as<StorageAlignStepNode>()) {
+    ps->ApplyToSchedule(stages, stage_to_axes);
+  } else if (auto ps = step.as<TensorizeStepNode>()) {
     ps->ApplyToSchedule(stages, stage_to_axes);
   } else if (auto ps = step.as<ComputeAtStepNode>()) {
     ps->ApplyToSchedule(stages, stage_to_axes);
@@ -302,6 +311,8 @@ String StepPrintAsPythonAPI(const Step& step, Array<te::Stage>* stages,
   } else if (auto ps = step.as<FollowFusedSplitStepNode>()) {
     return ps->PrintAsPythonAPI(stages, stage_to_axes, transform_steps);
   } else if (auto ps = step.as<StorageAlignStepNode>()) {
+    return ps->PrintAsPythonAPI(stages, stage_to_axes);
+  } else if (auto ps = step.as<TensorizeStepNode>()) {
     return ps->PrintAsPythonAPI(stages, stage_to_axes);
   } else if (auto ps = step.as<ComputeAtStepNode>()) {
     return ps->PrintAsPythonAPI(stages, stage_to_axes);
@@ -1257,6 +1268,77 @@ String StorageAlignStepNode::PrintAsPythonAPI(Array<te::Stage>* stages,
   ss << "s[" << op_name << "].storage_align("
      << CleanName((*stage_to_axes)[stage][iter_id]->var->name_hint, op_name) << ", " << factor
      << ", " << offset << ")\n";
+
+  ApplyToSchedule(stages, stage_to_axes);
+  return ss.str();
+}
+
+/********** Tensorize **********/
+TensorizeStep::TensorizeStep(int stage_id, int iter_id, String ti_func_name) {
+  auto node = make_object<TensorizeStepNode>();
+  node->stage_id = stage_id;
+  node->iter_id = iter_id;
+  node->ti_func_name = ti_func_name;
+  data_ = std::move(node);
+}
+
+TensorizeStep::TensorizeStep(dmlc::JSONReader* reader) {
+  auto node = make_object<TensorizeStepNode>();
+  bool s;
+  s = reader->NextArrayItem();
+  ICHECK(s);
+  reader->Read(&node->stage_id);
+  s = reader->NextArrayItem();
+  ICHECK(s);
+  reader->Read(&node->iter_id);
+  s = reader->NextArrayItem();
+  ICHECK(s);
+  std::string ti_func_name;
+  reader->Read(&ti_func_name);
+  node->ti_func_name = std::move(ti_func_name);
+  data_ = std::move(node);
+}
+
+void TensorizeStepNode::WriteToRecord(dmlc::JSONWriter* writer) const {
+  writer->WriteArraySeperator();
+  writer->WriteString(record_prefix_str);
+  writer->WriteArrayItem(stage_id);
+  writer->WriteArrayItem(iter_id);
+  writer->WriteArraySeperator();
+  writer->WriteString(ti_func_name);
+}
+
+void TensorizeStepNode::ApplyToState(State* state) const {
+  StateNode* pstate = state->CopyOnWrite();
+  const Stage& stage = pstate->stages[stage_id];
+  Iterator it = stage->iters[iter_id];
+  Iterator new_it = Iterator(it->name, it->range, it->iter_kind,
+      IteratorAnnotation::kTensorize, &it->orig_iters);
+  Stage new_stage = stage;
+  new_stage.CopyOnWrite()->iters.Set(iter_id, new_it);
+  pstate->stages.Set(stage_id, std::move(new_stage));
+}
+
+void TensorizeStepNode::ApplyToSchedule(Array<te::Stage>* stages,
+                                        StageToAxesMap* stage_to_axes) const {
+  te::Stage stage = (*stages)[stage_id];
+  const Array<IterVar>& axes = (*stage_to_axes)[stage];
+  auto func = tvm::runtime::Registry::Get(ti_func_name);
+  CHECK(func != nullptr) << "Cannot find the tensorize intrinsic func";
+  tvm::te::TensorIntrin res = (*func)();
+  CHECK(res.defined()) << "Tensorize intrinsic func must return a "
+                       << "tvm::te::TensorIntrin object";
+  stage.tensorize(axes[iter_id], res);
+  stages->Set(stage_id, std::move(stage));
+}
+
+String TensorizeStepNode::PrintAsPythonAPI(Array<te::Stage>* stages,
+                                           StageToAxesMap* stage_to_axes) const {
+  std::stringstream ss;
+  const auto& stage = (*stages)[stage_id];
+  ss << "s[" << CleanName(stage->op->name) << "].tensorize("
+     << CleanName((*stage_to_axes)[stage][iter_id]->var->name_hint) << ", "
+     << ti_func_name << "())\n";
 
   ApplyToSchedule(stages, stage_to_axes);
   return ss.str();
