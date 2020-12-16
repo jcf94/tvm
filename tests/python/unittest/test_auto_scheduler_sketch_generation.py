@@ -25,6 +25,7 @@ from tvm.auto_scheduler.loop_state import Stage
 
 from test_auto_scheduler_common import (
     matmul_auto_scheduler_test,
+    matmul_tensor_core_auto_scheduler_test,
     double_matmul_auto_scheduler_test,
     conv2d_nchw_bn_relu_auto_scheduler_test,
     max_pool2d_auto_scheduler_test,
@@ -385,16 +386,25 @@ def test_cuda_conv2d_winograd_sketch():
     assert_is_not_tiled(sketches[0].stages[12])
 
 
+@tvm.testing.requires_cuda
+def test_cuda_matmul_tensor_core_sketch():
+    import tvm.auto_scheduler.test_sketch.test_tensor_core_sketch as tc
+
+    sketches = generate_sketches(matmul_tensor_core_auto_scheduler_test, (512, 512, 512), "cuda")
+    print(sketches)
+
+
 if __name__ == "__main__":
-    test_cpu_matmul_sketch()
-    test_cpu_conv2d_bn_relu_sketch()
-    test_cpu_max_pool2d_sketch()
-    test_cpu_min_sketch()
-    test_cpu_softmax_sketch()
-    test_cpu_conv2d_winograd_sketch()
-    test_cuda_matmul_sketch()
-    test_cuda_conv2d_bn_relu_sketch()
-    test_cuda_max_pool2d_sketch()
-    test_cuda_min_sketch()
-    test_cuda_softmax_sketch()
-    test_cuda_conv2d_winograd_sketch()
+    # test_cpu_matmul_sketch()
+    # test_cpu_conv2d_bn_relu_sketch()
+    # test_cpu_max_pool2d_sketch()
+    # test_cpu_min_sketch()
+    # test_cpu_softmax_sketch()
+    # test_cpu_conv2d_winograd_sketch()
+    # test_cuda_matmul_sketch()
+    # test_cuda_conv2d_bn_relu_sketch()
+    # test_cuda_max_pool2d_sketch()
+    # test_cuda_min_sketch()
+    # test_cuda_softmax_sketch()
+    # test_cuda_conv2d_winograd_sketch()
+    test_cuda_matmul_tensor_core_sketch()

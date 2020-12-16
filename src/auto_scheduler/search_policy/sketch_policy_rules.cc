@@ -461,6 +461,42 @@ std::vector<std::pair<State, int>> RuleSpecialComputeLocationGPU::Apply(
   return {std::make_pair(std::move(tmp_s), stage_id - 1)};
 }
 
+/********** RuleGPUTensorCoreMatmul **********/
+
+SketchGenerationRule::ConditionKind RuleGPUTensorCoreMatmul::MeetCondition(
+    const SketchPolicyNode& policy, const State& state, int stage_id) const {
+  // Check if tensor core can be applied here, e.g. compute pattern matching?
+  const auto& inputs = state->stages[stage_id]->op->InputTensors();
+  if (inputs.size() == 2 &&
+      inputs[0]->dtype == tvm::runtime::DataType::Float(16) &&
+      inputs[1]->dtype == tvm::runtime::DataType::Float(16) /* && ....... */) {
+    // Better to use ConditionKind::kApply, then this rule can cooperate with other rules
+    return ConditionKind::kApplyAndSkipRest;
+  } else {
+    return ConditionKind::kSkip;
+  }
+}
+
+std::vector<std::pair<State, int>> RuleGPUTensorCoreMatmul::Apply(
+    const SketchPolicyNode& policy, const State& state, int stage_id) const {
+  std::vector<std::pair<State, int> > ret;
+
+  // Currently used a implementation of python API, better move all the impls here
+  if (const auto* f = runtime::Registry::Get("tensor_core_apply")) {
+    const Array<Array<ObjectRef>>& apply_ret = (*f)(
+        tvm::runtime::GetRef<SketchPolicy>(&policy), state, stage_id);
+    for (const auto& item : apply_ret) {
+      CHECK_EQ(item.size(), 2);
+      auto next = item[1].as<IntImmNode>();
+      ret.emplace_back(Downcast<State>(item[0]), next->value);
+    }
+  } else {
+    LOG(FATAL) << "tensor_core_apply function not found";
+  }
+
+  return ret;
+}
+
 /********** Init Population **********/
 
 PopulationGenerationRule::ResultKind InitFillTileSize::Apply(SketchPolicyNode* policy, State* state,

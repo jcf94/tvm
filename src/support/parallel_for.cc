@@ -49,6 +49,11 @@ std::vector<std::vector<int>> rr_partitioner(int begin, int end, int step, int n
 
 void parallel_for(int begin, int end, const std::function<void(int)>& f, int step,
                   const PartitionerFuncType partitioner) {
+  for (int i = begin; i < end; i += step) {
+    f(i);
+  }
+  return;
+
   static bool GLOBAL_PARALLEL_FOR_FLAG{false};
   static std::mutex M_GLOBAL_PARALLEL_FOR_FLAG;
   {

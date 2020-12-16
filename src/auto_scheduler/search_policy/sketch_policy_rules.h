@@ -131,6 +131,9 @@ DEFINE_SKETCH_GENERATION_RULE(RuleCrossThreadReduction);
  * location of the producers of compute ops that perform "fake reduction" with const tensors. */
 DEFINE_SKETCH_GENERATION_RULE(RuleSpecialComputeLocationGPU);
 
+/*! \brief The rule that process TensorCore on Matmul computation. */
+DEFINE_SKETCH_GENERATION_RULE(RuleGPUTensorCoreMatmul);
+
 /********** Init Population **********/
 
 /*! \brief The base class for rules used to annotate the sketches to get the initial population. */

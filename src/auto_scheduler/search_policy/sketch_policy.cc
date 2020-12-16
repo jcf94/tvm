@@ -57,6 +57,7 @@ static RuleAddRfactor rule_add_rfactor;
 static RuleCrossThreadReduction rule_cross_thread_reduction;
 static RuleSimplifyComputeWithConstTensor rule_simplify_compute_with_const_tensor;
 static RuleSpecialComputeLocationGPU rule_special_compute_location_gpu;
+static RuleGPUTensorCoreMatmul rule_gpu_tensorcore_matmul;
 
 /********** Init population rules **********/
 static InitFillTileSize init_fill_tile_size;
@@ -115,6 +116,7 @@ SketchPolicy::SketchPolicy(SearchTask task, CostModel program_cost_model,
     node->mutation_rules.push_back(std::make_shared<MutateParallel>(0.01));
   } else if (IsGPUTask(node->search_task)) {
     // Sketch Generation Rules
+    node->sketch_rules.push_back(&rule_gpu_tensorcore_matmul);
     node->sketch_rules.push_back(&rule_add_cache_read_stage);
     node->sketch_rules.push_back(&rule_special_compute_location_gpu);
     node->sketch_rules.push_back(&rule_always_inline);

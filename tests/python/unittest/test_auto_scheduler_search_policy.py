@@ -26,7 +26,7 @@ import tvm
 import tvm.testing
 from tvm import auto_scheduler
 
-from test_auto_scheduler_common import matmul_auto_scheduler_test, PropagatingThread
+from test_auto_scheduler_common import matmul_auto_scheduler_test, PropagatingThread, matmul_tensor_core_auto_scheduler_test
 import multiprocessing
 
 
@@ -39,11 +39,12 @@ def search_common(
     num_measure_trials=100,
     cost_model=auto_scheduler.RandomModel(),
     init_search_callbacks=None,
+    tensor_core=False,
 ):
     print("Test search policy '%s' for '%s'" % (search_policy, target))
 
     random.seed(seed)
-    N = 128
+    N = 512
     target = tvm.target.Target(target)
     task = auto_scheduler.SearchTask(func=workload, args=(N, N, N), target=target)
 
@@ -64,7 +65,7 @@ def search_common(
 
         tuning_options = auto_scheduler.TuningOptions(
             num_measure_trials=num_measure_trials,
-            num_measures_per_round=2,
+            num_measures_per_round=20,
             early_stopping=1,
             runner=runner,
             verbose=2,
@@ -80,6 +81,24 @@ def search_common(
             print("==== Lowered Stmt ====")
             print(tvm.lower(sch, args, simple_mode=True))
             mod = tvm.build(sch, args, target)
+
+            if tensor_core:
+                print(mod.imported_modules[0].get_source())
+                ctx = tvm.context(str(target), 0)
+                time_f = mod.time_evaluator(mod.entry_name, ctx,
+                                            number=10,
+                                            repeat=3,
+                                            min_repeat_ms=500)
+                args = [tvm.runtime.ndarray.empty(tvm.auto_scheduler.utils.get_const_tuple(x.shape), x.dtype, ctx) for x in args]
+                random_fill = tvm.get_global_func("tvm.contrib.random.random_fill", True)
+                assert random_fill, "Please make sure USE_RANDOM is ON in the config.cmake"
+                for arg in args:
+                    random_fill(arg)
+                ctx.sync()
+                costs = time_f(*args).results
+                print("Costs: ", np.mean(costs) * 1e3, " ms")
+                print("GFLOPS: ", task.compute_dag.flop_ct / np.mean(costs) / 1e9)
+                return
 
             ctx = tvm.context(str(target), 0)
             dtype = task.compute_dag.tensors[0].dtype
@@ -196,10 +215,32 @@ def test_sketch_search_policy_cuda_xgbmodel_rpc_runner():
     t.join()
 
 
+@tvm.testing.requires_cuda
+def test_sketch_search_policy_cuda_tensor_core():
+    import tvm.auto_scheduler.test_sketch.test_tensor_core_sketch
+
+    measure_ctx = auto_scheduler.LocalRPCMeasureContext()
+    # wrap the search in a new thread to avoid the conflict
+    # between python's multiprocessing and tvm's thread pool
+    t = PropagatingThread(
+        target=search_common,
+        kwargs={
+            "workload": matmul_tensor_core_auto_scheduler_test,
+            "target": "cuda",
+            "runner": measure_ctx.runner,
+            "cost_model": auto_scheduler.RandomModel(),
+            "tensor_core": True
+        },
+    )
+    t.start()
+    t.join()
+
+
 if __name__ == "__main__":
-    test_workload_registry_search_basic()
-    test_sketch_search_policy_basic()
-    test_sketch_search_policy_basic_spawn()
-    test_sketch_search_policy_xgbmodel()
-    test_sketch_search_policy_cuda_rpc_runner()
-    test_sketch_search_policy_cuda_xgbmodel_rpc_runner()
+    # test_workload_registry_search_basic()
+    # test_sketch_search_policy_basic()
+    # test_sketch_search_policy_basic_spawn()
+    # test_sketch_search_policy_xgbmodel()
+    # test_sketch_search_policy_cuda_rpc_runner()
+    # test_sketch_search_policy_cuda_xgbmodel_rpc_runner()
+    test_sketch_search_policy_cuda_tensor_core()

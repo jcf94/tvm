@@ -39,6 +39,18 @@ def matmul_auto_scheduler_test(N, M, K):
     )
     return [A, B, C]
 
+@auto_scheduler.register_workload
+def matmul_tensor_core_auto_scheduler_test(N, M, K):
+    A = te.placeholder((N // 16, K // 16, 16, 16), name='A', dtype="float16")
+    B = te.placeholder((K // 16, M // 16, 16, 16), name='B', dtype="float16")
+    k = te.reduce_axis((0, K // 16), name='k')
+    kk = te.reduce_axis((0, 16), name='kk')
+    C = te.compute((N // 16, M // 16, 16, 16),
+        lambda i, j, ii, jj: te.sum(A[i][k][ii][kk].astype("float32") * B[k][j][kk][jj].astype("float32"),
+                                    axis=[k, kk]),
+        name='C')
+    return [A, B, C]
+
 
 @auto_scheduler.register_workload
 def double_matmul_auto_scheduler_test(N):

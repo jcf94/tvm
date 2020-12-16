@@ -25,6 +25,7 @@ from tvm import topi
 
 from test_auto_scheduler_common import (
     matmul_auto_scheduler_test,
+    matmul_tensor_core_auto_scheduler_test,
     conv2d_nchw_bn_relu_auto_scheduler_test,
 )
 
@@ -550,11 +551,80 @@ def test_tensorize():
     sch, tensors = dag.apply_steps_from_state(s0)
     print(tvm.lower(sch, tensors, simple_mode=True))
 
+def test_tensor_core():
+    import tvm.auto_scheduler.test_sketch.test_tensor_core_sketch
+
+    A, B, C = matmul_tensor_core_auto_scheduler_test(512, 512, 512)
+    dag = auto_scheduler.ComputeDAG([A, B, C])
+    state = dag.get_init_state()
+
+    C_local = state.cache_write(C, "wmma.accumulator")
+
+    its0 = state.split(C_local, state[C_local].iters[0], [2, 16])
+    split_step0 = len(state.transform_steps) - 1
+    its1 = state.split(C_local, state[C_local].iters[3], [2, 16])
+    split_step1 = len(state.transform_steps) - 1
+    its2 = state.split(C_local, state[C_local].iters[8], [16])
+
+    state.reorder(C_local, [its0[0], its1[0], its0[1], its1[1], its0[2], its1[2],
+                            its2[0], its2[1],
+                            state[C_local].iters[6],
+                            state[C_local].iters[7],
+                            state[C_local].iters[10]])
+    state.fuse(C_local, [state[C_local].iters[0], state[C_local].iters[1]])
+    state.fuse(C_local, [state[C_local].iters[1], state[C_local].iters[2]])
+    state.fuse(C_local, [state[C_local].iters[2], state[C_local].iters[3]])
+
+    its0 = state.follow_split(C, state[C].iters[0], split_step0, 2)
+    its1 = state.follow_split(C, state[C].iters[3], split_step1, 2)
+    state.reorder(C, [its0[0], its1[0], its0[1], its1[1], its0[2], its1[2],
+                      state[C].iters[6], state[C].iters[7]])
+    state.fuse(C, [state[C].iters[0], state[C].iters[1]])
+    state.fuse(C, [state[C].iters[1], state[C].iters[2]])
+    local_write_pos = state.fuse(C, [state[C].iters[2], state[C].iters[3]])
+    state.compute_at(C_local, C, local_write_pos)
+    shared_read_pos = state[C_local].iters[3]
+    local_read_pos = state[C_local].iters[4]
+    state.bind(C, state[C].iters[0], "blockIdx.x")
+    state.bind(C, state[C].iters[1], "vthread")
+    state.bind(C, state[C].iters[2], "threadIdx.x")
+
+    B_shared = state.cache_read(B, "shared", [C_local])
+    B_local = state.cache_read(B_shared, "wmma.matrix_b", [C_local])
+    state.compute_at(B_shared, C_local, shared_read_pos)
+    state.compute_at(B_local, C_local, local_read_pos)
+
+    it = state.fuse(B_shared, state[B_shared].iters[:])
+    its = state.split(B_shared, it, [4]) # vectorize add a callback check function
+    state.vectorize(B_shared, its[1])
+    its = state.follow_fused_split(B_shared, its[0], [split_step0, split_step1], 1, True)
+    state.bind(B_shared, its[1], "threadIdx.x")
+
+    A_shared = state.cache_read(A, "shared", [C_local])
+    A_local = state.cache_read(A_shared, "wmma.matrix_a", [C_local])
+    state.compute_at(A_shared, C_local, shared_read_pos)
+    state.compute_at(A_local, C_local, local_read_pos)
+
+    it = state.fuse(A_shared, state[A_shared].iters[:])
+    its = state.split(A_shared, it, [4]) # vectorize add a callback check function
+    state.vectorize(A_shared, its[1])
+    its = state.follow_fused_split(A_shared, its[0], [split_step0, split_step1], 1, True)
+    state.bind(A_shared, its[1], "threadIdx.x")
+
+    state.tensorize(A_local, state[A_local].iters[-2], "intrin_wmma_load_matrix_a")
+    state.tensorize(B_local, state[B_local].iters[-2], "intrin_wmma_load_matrix_b")
+    state.tensorize(C_local, state[C_local].iters[-3], "intrin_wmma_gemm")
+    state.tensorize(C, state[C].iters[-2], "intrin_wmma_store_matrix")
+
+    sch, tensors = dag.apply_steps_from_state(state)
+    print(tvm.lower(sch, tensors, simple_mode=True))
+
 
 if __name__ == "__main__":
-    test_split_fuse_reorder_annotation()
-    test_compute_at_root_inline()
-    test_cache_read_write()
-    test_follow_split_follow_fused_split()
-    test_rfactor()
-    test_tensorize()
+    # test_split_fuse_reorder_annotation()
+    # test_compute_at_root_inline()
+    # test_cache_read_write()
+    # test_follow_split_follow_fused_split()
+    # test_rfactor()
+    # test_tensorize()
+    test_tensor_core()
