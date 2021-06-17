@@ -63,9 +63,8 @@ bool MatmulRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
   if (param->units.defined()) {
     // validate the weight shape is proper if defined
     // Assign weight type
-    const Array<IndexExpr>& wshape = weight_transposed
-                                         ? Array<IndexExpr>({param->units, reduce})
-                                         : Array<IndexExpr>({reduce, param->units});
+    const Array<IndexExpr>& wshape = weight_transposed ? Array<IndexExpr>({param->units, reduce})
+                                                       : Array<IndexExpr>({reduce, param->units});
     // It is possible for weight to be nullptr in which case we will use
     // data dtype as the weight dtype. However if weight dtype is explicitly
     // present we will use that.

@@ -53,13 +53,13 @@ reg.register_pattern("nn.log_softmax", OpPattern.OPAQUE)
 
 
 @reg.register_legalize("nn.matmul")
-def leaglize_matmul(attrs, inputs, types):
+def legalize_matmul(attrs, inputs, types):
     """Legalize matmul op.
 
     Parameters
     ----------
     attrs : tvm.ir.Attrs
-        Attributes of current convolution
+        Attributes of current matmul
     inputs : list of tvm.relay.Expr
         The args of the Relay expr to be legalized
     types : list of types
@@ -85,7 +85,7 @@ def legalize_dense(attrs, inputs, types):
     Parameters
     ----------
     attrs : tvm.ir.Attrs
-        Attributes of current convolution
+        Attributes of current dense
     inputs : list of tvm.relay.Expr
         The args of the Relay expr to be legalized
     types : list of types
