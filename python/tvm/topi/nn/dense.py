@@ -83,31 +83,30 @@ def matmul(
     assert in_dim == red_dim
 
     k = te.reduce_axis((0, in_dim), name="k")
-    if data_transposed:
-        if weight_transposed:
-            compute_lambda = lambda i, j: te.sum(
-                data[k, i].astype(out_dtype) * weight[j, k].astype(out_dtype), axis=k
-            )
-            compute_name = "T_matmul_TT"
-        else:
-            compute_lambda = lambda i, j: te.sum(
-                data[k, i].astype(out_dtype) * weight[k, j].astype(out_dtype), axis=k
-            )
-            compute_name = "T_matmul_TN"
+    if (data_transposed, weight_transposed) == (True, True):
+        compute_lambda = lambda i, j: te.sum(
+            data[k, i].astype(out_dtype) * weight[j, k].astype(out_dtype), axis=k
+        )
+        compute_name = "T_matmul_TT"
         compute_tag = "matmul"
-    else:
-        if weight_transposed:
-            compute_lambda = lambda i, j: te.sum(
-                data[i, k].astype(out_dtype) * weight[j, k].astype(out_dtype), axis=k
-            )
-            compute_name = "T_dense"
-            compute_tag = "dense"
-        else:
-            compute_lambda = lambda i, j: te.sum(
-                data[i, k].astype(out_dtype) * weight[k, j].astype(out_dtype), axis=k
-            )
-            compute_name = "T_matmul"
-            compute_tag = "matmul"
+    elif (data_transposed, weight_transposed) == (True, False):
+        compute_lambda = lambda i, j: te.sum(
+            data[k, i].astype(out_dtype) * weight[k, j].astype(out_dtype), axis=k
+        )
+        compute_name = "T_matmul_TN"
+        compute_tag = "matmul"
+    elif (data_transposed, weight_transposed) == (False, True):
+        compute_lambda = lambda i, j: te.sum(
+            data[i, k].astype(out_dtype) * weight[j, k].astype(out_dtype), axis=k
+        )
+        compute_name = "T_dense"
+        compute_tag = "dense"
+    else:  # (data_transposed, weight_transposed) == (False, False)
+        compute_lambda = lambda i, j: te.sum(
+            data[i, k].astype(out_dtype) * weight[k, j].astype(out_dtype), axis=k
+        )
+        compute_name = "T_matmul"
+        compute_tag = "matmul"
 
     mat = te.compute(
         (batch, out_dim),
