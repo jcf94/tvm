@@ -46,6 +46,7 @@ bool MatmulRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
 
   bool data_transposed = false;
   bool weight_transposed = true;
+  // Update transpose info if it is a MatmulAttrs
   const MatmulAttrs* mattr = attrs.as<MatmulAttrs>();
   if (mattr != nullptr) {
     data_transposed = mattr->data_transposed;
