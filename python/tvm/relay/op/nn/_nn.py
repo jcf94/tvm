@@ -1207,7 +1207,7 @@ def dense_shape_func(attrs, inputs, _):
     """
     Shape function for dense op.
     """
-    ret = [_matmul_shape_func(inputs[0], inputs[1], expr.IntImm("bool", 0), expr.IntImm("bool",1))]
+    ret = [_matmul_shape_func(inputs[0], inputs[1], expr.IntImm("bool", 0), expr.IntImm("bool", 1))]
     return ret
 
 
