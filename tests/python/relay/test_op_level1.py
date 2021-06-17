@@ -421,7 +421,6 @@ def test_matmul_type_check():
     yy = run_infer_type(y)
 
 
-@tvm.testing.uses_gpu
 def test_matmul():
     for dtype in ["float16", "float32"]:
         # Matmul accuracy for float16 is poor
