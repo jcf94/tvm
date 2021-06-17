@@ -44,14 +44,15 @@ bool MatmulRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
   if (data == nullptr) return false;
   ICHECK(static_cast<int>(data->shape.size()) != 0);
 
-  const AttrType* param = attrs.as<AttrType>();
-  ICHECK(param != nullptr);
   bool data_transposed = false;
   bool weight_transposed = true;
-  if (attrs->IsInstance<MatmulAttrs>()) {
-    data_transposed = param->data_transposed;
-    weight_transposed = param->weight_transposed;
+  const MatmulAttrs* mattr = attrs.as<MatmulAttrs>();
+  if (mattr != nullptr) {
+    data_transposed = mattr->data_transposed;
+    weight_transposed = mattr->weight_transposed;
   }
+  const AttrType* param = attrs.as<AttrType>();
+  ICHECK(param != nullptr);
 
   const Array<tvm::PrimExpr>& dshape = data->shape;
   Array<tvm::PrimExpr> oshape = dshape;
