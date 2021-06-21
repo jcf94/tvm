@@ -39,7 +39,7 @@ DEFAULT_ALWAYS_LIST = [
     "nn.conv1d_transpose",
     "nn.conv2d_transpose",
     "nn.conv3d_transpose",
-    "nn.dense",
+    "nn.matmul",
     # "nn.batch_matmul", # Handled by a special case
 ]
 DEFAULT_FOLLOW_LIST = [

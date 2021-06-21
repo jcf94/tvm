@@ -106,7 +106,7 @@ class DNNLJSONRuntime : public JSONRuntimeBase {
           Conv2d(nid, true, false);
         } else if ("dnnl.conv2d_bias_relu" == op_name) {
           Conv2d(nid, true, true);
-        } else if ("nn.dense" == op_name) {
+        } else if ("nn.matmul" == op_name) {
           Dense(nid);
         } else if ("nn.batch_norm" == op_name) {
           BatchNorm(nid);

@@ -61,7 +61,7 @@ def _get_model(shape, weight_shape, units, dtype, var_names, has_bias=False, has
 
 def _get_expected_codegen(shape, weight_shape, units, dtype, has_bias=False, has_gelu=False):
     output_shape = (shape[0], units)
-    name = "nn.dense"
+    name = "nn.matmul"
     if has_bias is True:
         name = "bnns.dense_bias"
     if has_bias is True and has_gelu is True:
@@ -77,6 +77,8 @@ def _get_expected_codegen(shape, weight_shape, units, dtype, has_bias=False, has
             "shape": [[list(output_shape)]],
             "dtype": [[dtype]],
             "units": [[str(units)]],
+            "data_transposed": [["0"]],
+            "weight_transposed": [["1"]],
         },
     }
 

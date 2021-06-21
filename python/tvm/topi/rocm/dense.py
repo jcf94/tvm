@@ -102,13 +102,7 @@ def schedule_dense(cfg, outs):
 
 @autotvm.register_topi_compute("matmul_rocblas.rocm")
 def matmul_rocblas(
-    cfg,
-    data,
-    weight,
-    bias=None,
-    out_dtype=None,
-    data_transposed=False,
-    weight_transposed=False
+    cfg, data, weight, bias=None, out_dtype=None, data_transposed=False, weight_transposed=False
 ):
     """Matmul operator for rocm backend with cblas.
 

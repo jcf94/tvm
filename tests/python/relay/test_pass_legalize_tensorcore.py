@@ -222,7 +222,7 @@ def test_legalize_dense():
 
         def legalize_dense(attrs, inputs, types):
             with tvm.target.Target("cuda"):
-                return topi.nn.dense_legalize(attrs, inputs, types)
+                return topi.nn.matmul_legalize(attrs, inputs, types)
 
         def expected():
             if not do_pad:
@@ -248,7 +248,7 @@ def test_legalize_dense():
             y = relay.Function([x, weight], y)
             return y
 
-        with TempOpAttr("nn.dense", "FTVMLegalize", legalize_dense):
+        with TempOpAttr("nn.matmul", "FTVMLegalize", legalize_dense):
             a = before()
             a = run_opt_pass(a, transform.Legalize())
             b = run_opt_pass(expected(), transform.InferType())

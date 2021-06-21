@@ -48,10 +48,16 @@ bool MatmulRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
 
   ICHECK(static_cast<int>(data->shape.size()) != 0);
 
+  // Default set to dense
+  bool data_transposed = false;
+  bool weight_transposed = true;
+  const MatmulAttrs* mattrs = attrs.as<MatmulAttrs>();
+  if (mattrs != nullptr) {
+    data_transposed = mattrs->data_transposed;
+    weight_transposed = mattrs->weight_transposed;
+  }
   const Array<tvm::PrimExpr>& dshape = data->shape;
   Array<tvm::PrimExpr> oshape = dshape;
-  bool data_transposed = param->data_transposed;
-  bool weight_transposed = param->weight_transposed;
   tvm::PrimExpr reduce = dshape[dshape.size() - 1];
   if (data_transposed) {
     reduce = dshape[dshape.size() - 2];

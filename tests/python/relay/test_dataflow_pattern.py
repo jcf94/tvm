@@ -444,7 +444,7 @@ def test_match_op_attr():
 
 
 def test_no_match_op_attr():
-    op = is_op("nn.dense").has_attr({"TOpPattern": K_ELEMWISE})
+    op = is_op("nn.matmul").has_attr({"TOpPattern": K_ELEMWISE})
     op_pat = op(wildcard(), wildcard())
     x = relay.var("x")
     y = relay.var("y")

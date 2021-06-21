@@ -99,6 +99,7 @@ def _batch_matmul_legalize(attrs, inputs, arg_types):
 
 def _dense_legalize(attrs, inputs, arg_types):
     """Legalizes dense op.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
 
     Parameters
     ----------

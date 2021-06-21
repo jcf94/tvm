@@ -308,7 +308,14 @@ def _qnn_dense_legalize_arm_cpu(attrs, inputs, types):
     # ARM prefers the dtypes to be same.
     if is_fast_int8_on_arm():
         return helper_change_dtypes_to_be_same(attrs, inputs, types, relay.qnn.op.dense)
-    return helper_no_fast_int8_hw_legalization(attrs, inputs, types, relay.nn.dense)
+    mattrs = tvm.ir.make_node(
+        "relay.attrs.MatmulAttrs",
+        units=attrs["units"],
+        out_dtype=attrs["out_dtype"],
+        data_transposed=False,
+        weight_transposed=True,
+    )  # TODO: Rewrite qnn.dense to qnn.matmul and remove this transformation
+    return helper_no_fast_int8_hw_legalization(mattrs, inputs, types, relay.nn.matmul)
 
 
 ##########################
@@ -329,7 +336,14 @@ def _qnn_dense_legalize_intel_cpu(attrs, inputs, types):
     # The VNNI transformations prefer uint8 x int8 datatypes.
     if is_fast_int8_on_intel():
         return helper_change_dtypes_to_uint8_int8(attrs, inputs, types, relay.qnn.op.dense)
-    return helper_no_fast_int8_hw_legalization(attrs, inputs, types, relay.nn.dense)
+    mattrs = tvm.ir.make_node(
+        "relay.attrs.MatmulAttrs",
+        units=attrs["units"],
+        out_dtype=attrs["out_dtype"],
+        data_transposed=False,
+        weight_transposed=True,
+    )  # TODO: Rewrite qnn.dense to qnn.matmul and remove this transformation
+    return helper_no_fast_int8_hw_legalization(mattrs, inputs, types, relay.nn.matmul)
 
 
 #####################

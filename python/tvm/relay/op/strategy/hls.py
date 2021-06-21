@@ -159,7 +159,9 @@ def conv2d_transpose_strategy_hls(attrs, inputs, out_type, target):
 
 
 def dense_strategy_hls(attrs, inputs, out_type, target):
-    """dense hls strategy"""
+    """Dense hls strategy.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
+    """
     strategy = _op.OpStrategy()
     strategy.add_implementation(
         wrap_compute_dense(topi.nn.dense),
@@ -171,7 +173,7 @@ def dense_strategy_hls(attrs, inputs, out_type, target):
 
 @matmul_strategy.register("hls")
 def matmul_strategy_hls(attrs, inputs, out_type, target):
-    """matmul hls strategy"""
+    """Matmul hls strategy"""
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)

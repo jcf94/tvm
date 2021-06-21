@@ -752,7 +752,7 @@ def wrap_compute_matmul(topi_compute, need_auto_scheduler_layout=False):
 
 @override_native_generic_func("matmul_strategy")
 def matmul_strategy(attrs, inputs, out_type, target):
-    """matmul generic strategy"""
+    """Matmul generic strategy"""
     logger.warning("matmul is not optimized for this platform.")
     strategy = _op.OpStrategy()
     strategy.add_implementation(

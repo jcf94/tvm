@@ -939,7 +939,7 @@ def test_call_attrs():
     program = """
     def @main(%p0: Tensor[(2, 4), float32], %p1: Tensor[(2, 4), float32]) {
     %2 = fn (%data: Tensor[(2, 4), float32], %weight: Tensor[(2, 4), float32]) {
-        %0 = nn.dense(%data, %weight, units=None);
+        %0 = nn.matmul(%data, %weight, units=None, data_transposed=False, weight_transposed=True);
         %1 = nn.relu(%0);
         add(%1, 1f)
     };

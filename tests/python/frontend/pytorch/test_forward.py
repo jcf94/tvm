@@ -3375,7 +3375,9 @@ def test_forward_matmul():
     # matrix x matrix
     tensor1 = torch.randn(10, 4)
     tensor2 = torch.randn(4, 10)
-    verify_model(MatMul1().float().eval(), input_data=[tensor1, tensor2], expected_ops=["nn.dense"])
+    verify_model(
+        MatMul1().float().eval(), input_data=[tensor1, tensor2], expected_ops=["nn.matmul"]
+    )
 
     # batched matrix x batched matrix
     tensor1 = torch.randn(10, 3, 4)
@@ -3387,12 +3389,16 @@ def test_forward_matmul():
     # batched matrix x broadcasted matrix
     tensor1 = torch.randn(10, 3, 4)
     tensor2 = torch.randn(4, 5)
-    verify_model(MatMul1().float().eval(), input_data=[tensor1, tensor2], expected_ops=["nn.dense"])
+    verify_model(
+        MatMul1().float().eval(), input_data=[tensor1, tensor2], expected_ops=["nn.matmul"]
+    )
 
     # broadcasted matrix x batched matrix
     tensor1 = torch.randn(10, 4)
     tensor2 = torch.randn(3, 4, 5)
-    verify_model(MatMul1().float().eval(), input_data=[tensor1, tensor2], expected_ops=["nn.dense"])
+    verify_model(
+        MatMul1().float().eval(), input_data=[tensor1, tensor2], expected_ops=["nn.matmul"]
+    )
 
     # batched matrix x batched matrix
     tensor1 = torch.randn(1, 12, 14, 64)

@@ -40,7 +40,7 @@ namespace relay {
 // Search dense op weight name from Expr
 class DenseOpWeightVisitor : private ExprVisitor {
  public:
-  DenseOpWeightVisitor() : dense_op_(Op::Get("nn.dense")) {}
+  DenseOpWeightVisitor() : dense_op_(Op::Get("nn.matmul")) {}
 
   Array<String> Search(const Expr& expr) {
     VisitExpr(expr);
@@ -74,7 +74,7 @@ class DenseToSparseDenseMutator : public ExprRewriter {
  public:
   DenseToSparseDenseMutator(const Array<ObjectRef>& weight_name,
                             const Array<Array<PrimExpr> >& weight_shape)
-      : dense_op_(Op::Get("nn.dense")), sparse_dense_op_(Op::Get("nn.sparse_dense")) {
+      : dense_op_(Op::Get("nn.matmul")), sparse_dense_op_(Op::Get("nn.sparse_dense")) {
     ICHECK_EQ(weight_name.size(), weight_shape.size());
     for (size_t i = 0; i < weight_name.size(); ++i) {
       ICHECK(weight_name[i]->IsInstance<runtime::StringObj>());

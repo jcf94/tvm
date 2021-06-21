@@ -119,26 +119,38 @@ int64_t Conv2dTransposeMacCount(const Call& call_node) {
   return count;
 }
 
-int64_t DenseMacCount(const Call& call_node) {
+int64_t MatmulMacCount(const Call& call_node) {
   if (!call_node->checked_type_.defined()) {
     LOG(WARNING) << "The infer type pass should be called before the mac count pass";
     return 0;
   }
   Array<Expr> args = call_node->args;
-  ICHECK_EQ(args.size(), 2) << "The number of input arguments of a Dense node should be 2.";
+  ICHECK_EQ(args.size(), 2) << "The number of input arguments of a Matmul node should be 2.";
   const auto* data_type = args[0]->checked_type().as<TensorTypeNode>();
   const auto* weight_type = args[1]->checked_type().as<TensorTypeNode>();
   Array<IndexExpr> data_shape = data_type->shape;
   Array<IndexExpr> weight_shape = weight_type->shape;
   ICHECK(data_shape.size() == 2 && weight_shape.size() == 2)
-      << "The dimension of an input tensor to Dense node should be 2.";
-  int64_t d1 = static_cast<int64_t>(data_shape[0].as<IntImmNode>()->value);
-  int64_t d2 = static_cast<int64_t>(data_shape[1].as<IntImmNode>()->value);
-  int64_t d3 = static_cast<int64_t>(weight_shape[0].as<IntImmNode>()->value);
-  int64_t d4 = static_cast<int64_t>(weight_shape[1].as<IntImmNode>()->value);
-  ICHECK_EQ(d2, d4) << "The dimensions of input arguments do not match.";
-  int64_t count = d1 * d2 * d3;
-  return count;
+      << "The dimension of an input tensor to Matmul node should be 2.";
+  const auto& mattr = call_node->attrs.as<MatmulAttrs>();
+  ICHECK(mattr != nullptr);
+  int64_t data_m, data_k, weight_k, weight_n;
+  if (mattr->data_transposed) {
+    data_k = static_cast<int64_t>(data_shape[0].as<IntImmNode>()->value);
+    data_m = static_cast<int64_t>(data_shape[1].as<IntImmNode>()->value);
+  } else {
+    data_m = static_cast<int64_t>(data_shape[0].as<IntImmNode>()->value);
+    data_k = static_cast<int64_t>(data_shape[1].as<IntImmNode>()->value);
+  }
+  if (mattr->weight_transposed) {
+    weight_n = static_cast<int64_t>(weight_shape[0].as<IntImmNode>()->value);
+    weight_k = static_cast<int64_t>(weight_shape[1].as<IntImmNode>()->value);
+  } else {
+    weight_k = static_cast<int64_t>(weight_shape[0].as<IntImmNode>()->value);
+    weight_n = static_cast<int64_t>(weight_shape[1].as<IntImmNode>()->value);
+  }
+  ICHECK_EQ(data_k, weight_k) << "The dimensions of input arguments do not match.";
+  return data_m * data_k * weight_n;
 }
 
 int64_t BatchMatmulMacCount(const Call& call_node) {
@@ -161,7 +173,7 @@ RELAY_REGISTER_OP("nn.conv2d").set_attr<FMacCount>("FMacCount", ConvMacCount);
 
 RELAY_REGISTER_OP("nn.conv2d_transpose").set_attr<FMacCount>("FMacCount", Conv2dTransposeMacCount);
 
-RELAY_REGISTER_OP("nn.dense").set_attr<FMacCount>("FMacCount", DenseMacCount);
+RELAY_REGISTER_OP("nn.matmul").set_attr<FMacCount>("FMacCount", MatmulMacCount);
 
 RELAY_REGISTER_OP("nn.batch_matmul").set_attr<FMacCount>("FMacCount", BatchMatmulMacCount);
 

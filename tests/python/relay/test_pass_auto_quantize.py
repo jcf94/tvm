@@ -390,7 +390,7 @@ def test_dense_conv2d_rewrite():
 
     def _check_dense(node):
         if isinstance(node, Call):
-            if node.op.name == "nn.dense":
+            if node.op.name == "nn.matmul":
                 assert node.args[0].checked_type.dtype == "int8"
                 assert node.args[1].checked_type.dtype == "int8"
                 assert node.checked_type.dtype == "int32"

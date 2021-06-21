@@ -183,7 +183,9 @@ def conv2d_strategy_rocm(attrs, inputs, out_type, target):
 
 
 def dense_strategy_rocm(attrs, inputs, out_type, target):
-    """Dense strategy for ROCM"""
+    """Dense strategy for ROCM.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
+    """
     assert len(inputs[0].shape) == 2 and len(inputs[1].shape) == 2, "Only support 2-dim dense"
     strategy = _op.OpStrategy()
     strategy.add_implementation(

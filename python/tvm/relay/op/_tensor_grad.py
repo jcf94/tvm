@@ -543,17 +543,43 @@ def bias_add_grad(orig, grad):
     ]
 
 
-@register_gradient("nn.dense")
-def dense_grad(orig, grad):
+@register_gradient("nn.matmul")
+def matmul_grad(orig, grad):
     """Returns [grad' @ weight, data @ grad']"""
     data, weight = orig.args
+    if (orig.attrs["data_transposed"], orig.attrs["weight_transposed"]) == (True, True):
+        return [
+            collapse_sum_like(
+                _nn.matmul(weight, grad, data_transposed=True, weight_transposed=True), data
+            ),
+            collapse_sum_like(
+                _nn.matmul(grad, data, data_transposed=True, weight_transposed=True), weight
+            ),
+        ]
+    if (orig.attrs["data_transposed"], orig.attrs["weight_transposed"]) == (True, False):
+        return [
+            collapse_sum_like(_nn.matmul(weight, grad, weight_transposed=True), data),
+            collapse_sum_like(_nn.matmul(data, grad), weight),
+        ]
+    if (orig.attrs["data_transposed"], orig.attrs["weight_transposed"]) == (False, True):
+        # Keep using Dense op here for not involving extra ops
+        # TODO: Merge all to nn.matmul when it is finally ready
+        return [
+            collapse_sum_like(
+                _nn.dense(grad, transpose(weight), units=weight.checked_type.shape[1]),
+                # _nn.matmul(grad, weight), data)
+                data,
+            ),
+            collapse_sum_like(
+                _nn.dense(transpose(grad), transpose(data), units=data.checked_type.shape[1]),
+                # _nn.matmul(grad, data, data_transposed=True)
+                weight,
+            ),
+        ]
+    # (orig.attrs["data_transposed"], orig.attrs["weight_transposed"]) == (False, False)
     return [
-        collapse_sum_like(
-            _nn.dense(grad, transpose(weight), units=weight.checked_type.shape[1]), data
-        ),
-        collapse_sum_like(
-            _nn.dense(transpose(grad), transpose(data), units=data.checked_type.shape[1]), weight
-        ),
+        collapse_sum_like(_nn.matmul(grad, weight, weight_transposed=True), data),
+        collapse_sum_like(_nn.matmul(data, grad, data_transposed=True), weight),
     ]
 
 

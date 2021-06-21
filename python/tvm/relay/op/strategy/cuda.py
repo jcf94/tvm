@@ -699,7 +699,9 @@ def conv1d_transpose_strategy_cuda(attrs, inputs, out_type, target):
 
 
 def dense_strategy_cuda(attrs, inputs, out_type, target):
-    """dense cuda strategy"""
+    """Dense cuda strategy.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
+    """
     strategy = _op.OpStrategy()
     data, weights = inputs
     b, i = get_const_tuple(data.shape)
@@ -759,13 +761,13 @@ def dense_strategy_cuda(attrs, inputs, out_type, target):
 
 @matmul_strategy.register(["cuda", "gpu"])
 def matmul_strategy_cuda(attrs, inputs, out_type, target):
-    """matmul cuda strategy"""
+    """Matmul cuda strategy"""
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)
         strategy = dense_strategy_cuda(attrs, inputs, out_type, target)
     else:
-        logger.warning("Matmul other than NT format is not optimized for x86.")
+        logger.warning("Matmul other than NT format is not optimized for cuda.")
         strategy = _op.OpStrategy()
         strategy.add_implementation(
             wrap_compute_matmul(topi.nn.matmul),

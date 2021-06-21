@@ -164,6 +164,7 @@ Useful for
 
 // ------------------- relay.nn.matmul
 TVM_REGISTER_NODE_TYPE(MatmulAttrs);
+TVM_REGISTER_NODE_TYPE(DenseAttrs);  // Used by qnn.dense. TODO: Rewrite qnn.dense to qnn.matmul
 
 Expr MakeMatmul(Expr data, Expr weight, IndexExpr units, DataType out_dtype, bool data_transposed,
                 bool weight_transposed) {

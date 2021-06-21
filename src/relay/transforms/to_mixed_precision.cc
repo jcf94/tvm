@@ -134,6 +134,8 @@ class MixedPrecisionPass : public MixedModeMutator {
         return ModifyAttrsOutputDType(attrs, accumulation_dtype);
       } else if (auto attrs = cur_attrs.as<DenseAttrs>()) {
         return ModifyAttrsOutputDType(attrs, accumulation_dtype);
+      } else if (auto attrs = cur_attrs.as<MatmulAttrs>()) {
+        return ModifyAttrsOutputDType(attrs, accumulation_dtype);
       } else if (auto attrs = cur_attrs.as<BatchMatmulAttrs>()) {
         return ModifyAttrsOutputDType(attrs, accumulation_dtype);
       }

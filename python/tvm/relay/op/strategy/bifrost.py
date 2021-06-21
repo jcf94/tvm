@@ -110,7 +110,9 @@ def conv2d_winograd_without_weight_transfrom_strategy_bifrost(attrs, inputs, out
 
 
 def dense_strategy_bifrost(attrs, inputs, out_type, target):
-    """dense mali(bifrost) strategy"""
+    """Dense mali(bifrost) strategy.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
+    """
     strategy = _op.OpStrategy()
     strategy.add_implementation(
         wrap_compute_dense(topi.bifrost.dense),
@@ -122,7 +124,7 @@ def dense_strategy_bifrost(attrs, inputs, out_type, target):
 
 @matmul_strategy.register("bifrost")
 def matmul_strategy_bifrost(attrs, inputs, out_type, target):
-    """matmul mali(bifrost) strategy"""
+    """Matmul mali(bifrost) strategy"""
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)

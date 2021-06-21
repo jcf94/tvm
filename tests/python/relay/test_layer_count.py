@@ -23,7 +23,7 @@ def test_layer_count():
         # Load a resnet with a known number of layers.
         mod, _ = resnet.get_workload(num_layers=num_layers)
         # Count the number of conv and dense layers.
-        count = count_layers(mod, valid_ops=["nn.conv2d", "nn.dense"])
+        count = count_layers(mod, valid_ops=["nn.conv2d", "nn.matmul"])
         assert count == num_layers
 
     verify(18)

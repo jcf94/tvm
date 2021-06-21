@@ -172,7 +172,7 @@ def arm_compute_lib_pattern_table():
         pattern : dataflow_pattern.AltPattern
             Denotes the convolution pattern.
         """
-        pattern = is_op("nn.dense")(wildcard(), is_constant())
+        pattern = is_op("nn.matmul")(wildcard(), is_constant())
         pattern = pattern.optional(lambda x: is_op("nn.bias_add")(x, is_constant()))
         return pattern
 
@@ -237,9 +237,9 @@ def arm_compute_lib_pattern_table():
         return qnn_conv2d(call)
 
     def check_dense(extract):
-        """Check conv pattern is supported by ACL."""
+        """Check dense pattern is supported by ACL."""
         call = extract
-        while call.op.name != "nn.dense":
+        while call.op.name != "nn.matmul":
             call = call.args[0]
         return dense(call)
 
@@ -368,7 +368,7 @@ def depthwise_conv2d(attrs, args):
     return True
 
 
-@tvm.ir.register_op_attr("nn.dense", "target.arm_compute_lib")
+@tvm.ir.register_op_attr("nn.matmul", "target.arm_compute_lib")
 def dense(expr):
     """Check if the external ACL codegen for dense should be used."""
     attrs, args = expr.attrs, expr.args

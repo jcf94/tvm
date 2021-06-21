@@ -102,9 +102,9 @@ class BNNSJSONSerializer : public backend::contrib::JSONSerializer {
         call = GetRootCall(body, 1, {"nn.conv2d", "sigmoid"});
         ICHECK(call->op.as<OpNode>()) << "Not op node";
       } else if (name == "bnns.dense_bias") {
-        call = GetRootCall(fn->body.as<CallNode>(), 1, {"nn.dense", "add"});
+        call = GetRootCall(fn->body.as<CallNode>(), 1, {"nn.matmul", "add"});
       } else if (name == "bnns.dense_bias_gelu") {
-        call = FindCallWithName(fn->body.as<CallNode>(), 10, "nn.dense");
+        call = FindCallWithName(fn->body.as<CallNode>(), 10, "nn.matmul");
       } else {
         LOG(FATAL) << "Unrecognized BNNS pattern: " << name;
       }

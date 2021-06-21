@@ -191,7 +191,7 @@ def bias_check(expr):
     return False
 
 
-@tvm.ir.register_op_attr("nn.dense", "target.bnns")
+@tvm.ir.register_op_attr("nn.matmul", "target.bnns")
 def dense(expr):
     """Check if the dense can be used in BNNS."""
     attrs, args = expr.attrs, expr.args
@@ -239,7 +239,7 @@ def make_dense_bias_pattern():
     data = wildcard()
     weight = wildcard()
     bias = wildcard()
-    d = is_op("nn.dense")(data, weight)
+    d = is_op("nn.matmul")(data, weight)
     return is_op("add")(d, bias)
 
 
@@ -263,7 +263,7 @@ def make_dense_bias_gelu_pattern():
 def check_dense(extract):
     """Check dense pattern is supported by BNNS."""
     call = extract
-    while call.op.name != "nn.dense":
+    while call.op.name != "nn.matmul":
         call = call.args[0]
     return dense(call)
 

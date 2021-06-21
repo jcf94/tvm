@@ -35,7 +35,7 @@ def _alter_dense_layout(attrs, inputs, tinfos, out_type):
     N, _ = get_const_tuple(weight_tensor.shape)
 
     impl, outs = relay.backend.compile_engine.select_implementation(
-        relay.op.get("nn.dense"), attrs, tinfos, out_type, target
+        relay.op.get("nn.matmul"), attrs, tinfos, out_type, target
     )
     workload = autotvm.task.get_workload(outs)
     if workload:

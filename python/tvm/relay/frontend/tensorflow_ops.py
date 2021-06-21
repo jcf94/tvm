@@ -1121,6 +1121,15 @@ def _matmul():
                 inputs[0] = _op.transpose(inputs[0], axes=(1, 0))
             if not attr["transpose_b"]:
                 inputs[1] = _op.transpose(inputs[1], axes=(1, 0))
+            return AttrCvt(
+                op_name="matmul",
+                extras={
+                    "units": channels,
+                    "data_transposed": False,
+                    "weight_transposed": True,
+                },
+                ignores=["transpose_a", "transpose_b", "T"],
+            )(inputs, attr)
         return AttrCvt(
             op_name="matmul",
             extras={

@@ -1323,7 +1323,7 @@ def test_alter_op_dense():
     for target, _ in tvm.testing.enabled_targets():
         with tvm.target.Target(target):
             with TempOpAttr(
-                "nn.dense", "FTVMAlterOpLayout", topi.x86.dense_alter_op._alter_dense_layout
+                "nn.matmul", "FTVMAlterOpLayout", topi.x86.dense_alter_op._alter_matmul_layout
             ):
                 a = before()
                 a = run_opt_pass(a, transform.AlterOpLayout())

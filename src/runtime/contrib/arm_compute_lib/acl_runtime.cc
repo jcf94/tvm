@@ -135,7 +135,7 @@ class ACLRuntime : public JSONRuntimeBase {
         } else if ("nn.depthwise_conv2d" == op_name || "qnn.depthwise_conv2d" == op_name) {
           CreateDepthwiseConvolution2DLayer(&layer_, node, mm);
           num_pools++;
-        } else if ("nn.dense" == op_name || "qnn.dense" == op_name) {
+        } else if ("nn.matmul" == op_name || "qnn.dense" == op_name) {
           CreateFullyConnectedLayer(&layer_, node, mm);
           num_pools++;
         } else if ("nn.max_pool2d" == op_name || "nn.avg_pool2d" == op_name ||

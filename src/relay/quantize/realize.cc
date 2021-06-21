@@ -292,7 +292,7 @@ Expr DenseRealize(const Call& ref_call, const Array<Expr>& new_args, const Objec
   return QRealizeIntExpr(ret, dom_scale, out_dtype);
 }
 
-RELAY_REGISTER_OP("nn.dense").set_attr<FForwardRewrite>("FQRealizeRewrite", DenseRealize);
+RELAY_REGISTER_OP("nn.matmul").set_attr<FForwardRewrite>("FQRealizeRewrite", DenseRealize);
 
 Expr MulRealize(const Call& ref_call, const Array<Expr>& new_args, const ObjectRef& ctx) {
   const QConfig& cfg = QConfig::Current();

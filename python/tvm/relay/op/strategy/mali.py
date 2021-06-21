@@ -173,7 +173,9 @@ def conv2d_winograd_without_weight_transfrom_strategy_mali(attrs, inputs, out_ty
 
 
 def dense_strategy_mali(attrs, inputs, out_type, target):
-    """dense mali strategy"""
+    """Dense mali strategy.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
+    """
     strategy = _op.OpStrategy()
     strategy.add_implementation(
         wrap_compute_dense(topi.mali.dense),
@@ -185,7 +187,7 @@ def dense_strategy_mali(attrs, inputs, out_type, target):
 
 @matmul_strategy.register("mali")
 def matmul_strategy_mali(attrs, inputs, out_type, target):
-    """dense mali strategy"""
+    """Matmul mali strategy"""
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)

@@ -115,7 +115,7 @@ def _get_expected_codegen(shape, weight_shape, units, dtype, has_bias=False):
 
     node = {
         "op": "kernel",
-        "name": "nn.dense",
+        "name": "nn.matmul",
         "inputs": [],
         "attrs": {
             "num_outputs": "1",
@@ -123,6 +123,8 @@ def _get_expected_codegen(shape, weight_shape, units, dtype, has_bias=False):
             "shape": [[list(output_shape)]],
             "dtype": [[dtype]],
             "units": [[str(units)]],
+            "data_transposed": [["0"]],
+            "weight_transposed": [["1"]],
         },
     }
 
@@ -138,6 +140,10 @@ def _get_expected_codegen(shape, weight_shape, units, dtype, has_bias=False):
     # qnn.dense params, input and kernel
     if dtype == "uint8":
         node["name"] = "qnn.dense"
+        # These two attrs are not in DenseAttrs
+        # TODO: Rewrite qnn.dense to qnn.matmul, so it can use MatmulAttrs
+        node["attrs"].pop("data_transposed")
+        node["attrs"].pop("weight_transposed")
         for param_dtype in ["int32", "float32"]:
             for _ in range(2):
                 inputs.append(

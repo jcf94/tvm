@@ -176,7 +176,7 @@ class BNNSJSONRuntime : public JSONRuntimeBase {
           Conv2d(nid, true, "sigmoid");
         } else if ("bnns.conv2d_bias" == op_name) {
           Conv2d(nid, true);
-        } else if ("nn.dense" == op_name) {
+        } else if ("nn.matmul" == op_name) {
           Dense(nid);
         } else if ("bnns.dense_bias" == op_name) {
           Dense(nid, true);

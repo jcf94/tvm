@@ -426,7 +426,7 @@ def test_no_duplication():
     gr = tvm.relay.transform.gradient(fn, mode="first_order")
 
     counts = count_ops(gr)
-    assert counts["nn.dense"] == 3, "We expect 3 dense (1 forward, two backward)"
+    assert counts["nn.matmul"] == 3, "We expect 3 dense (1 forward, two backward)"
 
 
 def test_global_function():

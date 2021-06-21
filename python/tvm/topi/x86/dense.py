@@ -306,17 +306,18 @@ def matmul_blas_common(cfg, data, weight, bias, out_dtype, lib, data_transposed,
 
 @autotvm.register_topi_compute("matmul_cblas.x86")
 def matmul_cblas(
-    cfg,
-    data,
-    weight,
-    bias=None,
-    out_dtype=None,
-    data_transposed=False,
-    weight_transposed=False
+    cfg, data, weight, bias=None, out_dtype=None, data_transposed=False, weight_transposed=False
 ):
     """Compute matmul using a cblas"""
     return matmul_blas_common(
-        cfg, data, weight, bias, out_dtype, cblas, data_transposed, weight_transposed,
+        cfg,
+        data,
+        weight,
+        bias,
+        out_dtype,
+        cblas,
+        data_transposed,
+        weight_transposed,
     )
 
 
@@ -328,17 +329,18 @@ def schedule_matmul_cblas(_, outs):
 
 @autotvm.register_topi_compute("matmul_mkl.x86")
 def matmul_mkl(
-    cfg,
-    data,
-    weight,
-    bias=None,
-    out_dtype=None,
-    data_transposed=False,
-    weight_transposed=False
+    cfg, data, weight, bias=None, out_dtype=None, data_transposed=False, weight_transposed=False
 ):
     """Compute matmul using mkl"""
     return matmul_blas_common(
-        cfg, data, weight, bias, out_dtype, mkl, data_transposed, weight_transposed,
+        cfg,
+        data,
+        weight,
+        bias,
+        out_dtype,
+        mkl,
+        data_transposed,
+        weight_transposed,
     )
 
 
@@ -362,17 +364,18 @@ def schedule_matmul_mkl(_, outs):
 
 @autotvm.register_topi_compute("matmul_mkldnn.x86")
 def matmul_mkldnn(
-    cfg,
-    data,
-    weight,
-    bias=None,
-    out_dtype=None,
-    data_transposed=False,
-    weight_transposed=False
+    cfg, data, weight, bias=None, out_dtype=None, data_transposed=False, weight_transposed=False
 ):
     """Compute matmul using mkldnn"""
     return matmul_blas_common(
-        cfg, data, weight, bias, out_dtype, mkldnn, data_transposed, weight_transposed,
+        cfg,
+        data,
+        weight,
+        bias,
+        out_dtype,
+        mkldnn,
+        data_transposed,
+        weight_transposed,
     )
 
 

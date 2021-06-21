@@ -247,7 +247,7 @@ class ACLJSONSerializer : public backend::contrib::JSONSerializer {
     if (nodes.requantize) {
       ICHECK(backend::IsOp(current_call, "qnn.dense"));
     } else {
-      ICHECK(backend::IsOp(current_call, "nn.dense"));
+      ICHECK(backend::IsOp(current_call, "nn.matmul"));
     }
     nodes.dense = current_call;
     return nodes;
@@ -261,7 +261,7 @@ class ACLJSONSerializer : public backend::contrib::JSONSerializer {
    */
   std::shared_ptr<JSONGraphNode> CreateCompositeDenseJSONNode(const CallNode* cn) {
     CompositeDenseNode nodes = UnpackCompositeDense(cn);
-    std::string name = "nn.dense";
+    std::string name = "nn.matmul";
 
     // Inputs must be added in the same order they appear in the relay graph.
     std::vector<JSONGraphNodeEntry> inputs;

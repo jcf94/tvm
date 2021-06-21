@@ -54,7 +54,7 @@ namespace relay {
 class ParallelDenseToBatchCombiner : public ParallelOpBatchCombiner {
  public:
   explicit ParallelDenseToBatchCombiner(uint64_t min_num_branches)
-      : ParallelOpBatchCombiner("nn.dense", "nn.batch_matmul", min_num_branches) {}
+      : ParallelOpBatchCombiner("nn.matmul", "nn.batch_matmul", min_num_branches) {}
 
  protected:
   Call MakeCombinedOp(const Group& branches) {
@@ -96,7 +96,7 @@ class ParallelDenseToBatchCombiner : public ParallelOpBatchCombiner {
 class ParallelDenseToDenseCombiner : public ParallelOpCombiner {
  public:
   explicit ParallelDenseToDenseCombiner(uint64_t min_num_branches)
-      : ParallelOpCombiner("nn.dense", min_num_branches) {}
+      : ParallelOpCombiner("nn.matmul", min_num_branches) {}
 
  protected:
   bool IsSupportedOp(const CallNode* n) { return true; }
@@ -113,7 +113,7 @@ class ParallelDenseToDenseCombiner : public ParallelOpCombiner {
   }
 
   Call MakeCombinedOp(const Group& branches) {
-    const Op& dense_op = Op::Get("nn.dense");
+    const Op& dense_op = Op::Get("nn.matmul");
     Expr input = branches[0][0]->args[0];
     Expr new_weight;
     IndexExpr new_output_dims;
@@ -124,6 +124,8 @@ class ParallelDenseToDenseCombiner : public ParallelOpCombiner {
     const auto dense_attrs = make_object<MatmulAttrs>();
     dense_attrs->units = new_output_dims;
     dense_attrs->out_dtype = origin_attrs->out_dtype;
+    dense_attrs->data_transposed = origin_attrs->data_transposed;
+    dense_attrs->weight_transposed = origin_attrs->weight_transposed;
     return Call(dense_op, {input, new_weight}, Attrs{dense_attrs}, {});
   }
 

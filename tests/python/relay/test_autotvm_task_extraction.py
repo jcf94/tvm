@@ -46,7 +46,7 @@ def test_task_extraction():
     conv2d = relay.op.get("nn.conv2d")
     conv3d = relay.op.get("nn.conv3d")
     conv2d_transpose = relay.op.get("nn.conv2d_transpose")
-    dense = relay.op.get("nn.dense")
+    dense = relay.op.get("nn.matmul")
 
     mod, params, _ = get_network("resnet-18", batch_size=1)
     tasks = autotvm.task.extract_from_program(
@@ -104,7 +104,7 @@ def test_task_extraction():
 
 def test_task_extraction_for_dense_int8_cuda():
     target = "cuda"
-    dense = relay.op.get("nn.dense")
+    dense = relay.op.get("nn.matmul")
 
     def get_net(batch, in_dim, out_dim, dtype, out_dtype):
         data = tvm.relay.var("data", shape=[batch, in_dim], dtype=dtype)

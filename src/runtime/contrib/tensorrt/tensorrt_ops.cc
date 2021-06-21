@@ -1194,7 +1194,7 @@ GetOpConverters() {
   map->emplace("nn.layer_norm", std::make_shared<LayerNormOpConverter>());
   map->emplace("nn.softmax", std::make_shared<SoftmaxOpConverter>());
   map->emplace("nn.conv2d", std::make_shared<Conv2DOpConverter>());
-  map->emplace("nn.dense", std::make_shared<DenseOpConverter>());
+  map->emplace("nn.matmul", std::make_shared<DenseOpConverter>());
   map->emplace("nn.bias_add", std::make_shared<BiasAddOpConverter>());
   map->emplace("add", std::make_shared<ElementWiseBinaryOpConverter>());
   map->emplace("subtract", std::make_shared<ElementWiseBinaryOpConverter>());

@@ -69,6 +69,14 @@ class MatmulAttrs(Attrs):
     """Attributes for nn.matmul"""
 
 
+@tvm._ffi.register_object("relay.attrs.DenseAttrs")
+class DenseAttrs(Attrs):
+    """Attributes for nn.dense
+
+    This is still used by qnn.dense. TODO: Rewrite `qnn.dense` to `qnn.matmul`.
+    """
+
+
 @tvm._ffi.register_object("relay.attrs.SoftmaxAttrs")
 class SoftmaxAttrs(Attrs):
     """Attributes for nn.softmax"""

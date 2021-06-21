@@ -393,7 +393,7 @@ def conv2d_annotate_fn(expr):  # pylint: disable=unused-variable
     return True
 
 
-@_register_external_dynamic_check_func("nn.dense")
+@_register_external_dynamic_check_func("nn.matmul")
 def dense_annotate_fn(expr):  # pylint: disable=unused-variable
     """Check if dense is supported by TensorRT."""
 
@@ -915,7 +915,7 @@ class IsComputeIntensiveGraph(ExprVisitor):
                 "nn.conv2d_transpose",
                 "nn.conv3d",
                 "nn.conv3d_transpose",
-                "nn.dense",
+                "nn.matmul",
                 "nn.batch_matmul",
                 "sum",
                 "prod",

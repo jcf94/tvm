@@ -623,7 +623,7 @@ relay_to_onnx_op_mapping = {
     "add": rename("Add"),
     "nn.relu": rename("Relu"),
     "transpose": Transpose,
-    "nn.dense": MatMul,
+    "nn.matmul": MatMul,
     "nn.max_pool2d": MaxPool,
     "nn.batch_flatten": Flatten,
     "multiply": rename("Mul"),

@@ -41,7 +41,7 @@ namespace relay {
 // Find name of weight in ```y = nn.dense(x, tranpose(w, [1, 0]))```
 class FCTransposeVisitor : private ExprVisitor {
  public:
-  FCTransposeVisitor() : dense_op_(Op::Get("nn.dense")), transpose_op_(Op::Get("transpose")) {}
+  FCTransposeVisitor() : dense_op_(Op::Get("nn.matmul")), transpose_op_(Op::Get("transpose")) {}
 
   Array<String> Search(const Expr& expr) {
     VisitExpr(expr);
@@ -79,7 +79,7 @@ TVM_REGISTER_GLOBAL("relay.analysis.search_fc_transpose").set_body_typed(SearchF
 class FCTransposeMutator : public ExprRewriter {
  public:
   explicit FCTransposeMutator(const Array<ObjectRef>& target_weights)
-      : dense_op_(Op::Get("nn.dense")), transpose_op_(Op::Get("transpose")) {
+      : dense_op_(Op::Get("nn.matmul")), transpose_op_(Op::Get("transpose")) {
     for (size_t i = 0; i < target_weights.size(); ++i) {
       ICHECK(target_weights[i]->IsInstance<runtime::StringObj>());
       std::string k = target_weights[i].as<runtime::StringObj>()->data;

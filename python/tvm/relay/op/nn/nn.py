@@ -1473,11 +1473,13 @@ def bias_add(data, bias, axis=1):
 
 def matmul(data, weight, units=None, out_dtype="", data_transposed=False, weight_transposed=False):
     """Matmul operator.
-    Applies a linear transformation. The X & W can be transposed.
+    Applies a linear transformation:
 
     .. math::
 
-    `Y = X * W`
+        `Y = X * W`
+
+    The X & W can be transposed.
 
     Parameters
     ----------
@@ -1512,11 +1514,15 @@ def matmul(data, weight, units=None, out_dtype="", data_transposed=False, weight
 
 def dense(data, weight, units=None, out_dtype=""):
     """Dense operator.
-    Applies a linear transformation
+    Applies a linear transformation:
 
     .. math::
 
-    `Y = X * W^T`
+        `Y = X * W^T`
+
+    .. note::
+        This is an alias of `nn.matmul` when data is in non-transposed format and weight is
+        transposed.
 
     Parameters
     ----------

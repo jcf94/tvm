@@ -371,8 +371,8 @@ def conv1d_strategy_cpu(attrs, inputs, out_type, target):
 
 
 def dense_strategy_cpu(attrs, inputs, out_type, target):
-    """Dense x86 strategy. This is a specialized case for Matmul with data non-transposed and
-    weight transposed.
+    """Dense x86 strategy.
+    This is a specialized case for Matmul with data non-transposed and weight transposed.
     """
 
     strategy = _op.OpStrategy()
@@ -394,7 +394,7 @@ def dense_strategy_cpu(attrs, inputs, out_type, target):
 
 @matmul_strategy.register("cpu")
 def matmul_strategy_cpu(attrs, inputs, out_type, target):
-    """Matmul x86 strategy."""
+    """Matmul x86 strategy"""
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)
@@ -402,6 +402,11 @@ def matmul_strategy_cpu(attrs, inputs, out_type, target):
     else:
         logger.warning("Matmul other than NT format is not optimized for x86.")
         strategy = _op.OpStrategy()
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.nn.matmul),
+            naive_schedule,
+            name="matmul.generic",
+        )
 
     same_type = inputs[0].dtype == inputs[1].dtype == out_type.dtype
     dtype = inputs[0].dtype
