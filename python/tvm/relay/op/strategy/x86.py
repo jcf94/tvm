@@ -394,13 +394,13 @@ def dense_strategy_cpu(attrs, inputs, out_type, target):
 
 @matmul_strategy.register("cpu")
 def matmul_strategy_cpu(attrs, inputs, out_type, target):
-    """Matmul x86 strategy"""
+    """Matmul x86 strategy."""
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)
         strategy = dense_strategy_cpu(attrs, inputs, out_type, target)
     else:
-        logger.warning("Matmul not in NT format is not optimized for x86.")
+        logger.warning("Matmul other than NT format is not optimized for x86.")
         strategy = _op.OpStrategy()
 
     same_type = inputs[0].dtype == inputs[1].dtype == out_type.dtype

@@ -187,7 +187,7 @@ def dense_strategy_rocm(attrs, inputs, out_type, target):
     assert len(inputs[0].shape) == 2 and len(inputs[1].shape) == 2, "Only support 2-dim dense"
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_matmul(topi.rocm.dense),
+        wrap_compute_dense(topi.rocm.dense),
         wrap_topi_schedule(topi.rocm.schedule_dense),
         name="dense.rocm",
     )

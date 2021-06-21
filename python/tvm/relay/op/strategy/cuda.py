@@ -765,14 +765,12 @@ def matmul_strategy_cuda(attrs, inputs, out_type, target):
         # Specialized schedule for dense(matmul-NT)
         strategy = dense_strategy_cuda(attrs, inputs, out_type, target)
     else:
+        logger.warning("Matmul other than NT format is not optimized for x86.")
         strategy = _op.OpStrategy()
-
-    if target.kind.name == "cuda" and "cublas" in target.libs:
         strategy.add_implementation(
-            wrap_compute_matmul(topi.cuda.matmul_cublas),
-            wrap_topi_schedule(topi.cuda.schedule_matmul_cublas),
-            name="matmul_cublas.cuda",
-            plevel=25,
+            wrap_compute_matmul(topi.nn.matmul),
+            wrap_topi_schedule(topi.cuda.schedule_dense_small_batch),
+            name="matmul_default.cuda",
         )
     if is_auto_scheduler_enabled():
         strategy.add_implementation(
@@ -780,6 +778,13 @@ def matmul_strategy_cuda(attrs, inputs, out_type, target):
             naive_schedule,
             name="matmul.cuda",
             plevel=24,
+        )
+    if target.kind.name == "cuda" and "cublas" in target.libs:
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.cuda.matmul_cublas),
+            wrap_topi_schedule(topi.cuda.schedule_matmul_cublas),
+            name="matmul_cublas.cuda",
+            plevel=25,
         )
     return strategy
 

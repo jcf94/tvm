@@ -27,7 +27,7 @@ from common import Int8Fallback
 import tvm.testing
 
 _dense_implement = {
-    "generic": [(topi.nn.dense, topi.generic.schedule_dense)],
+    "generic": [(topi.nn.dense, topi.generic.schedule_matmul)],
     "cpu": [
         (topi.x86.dense_nopack, topi.x86.schedule_dense_nopack),
         (topi.x86.dense_pack, topi.x86.schedule_dense_pack),
