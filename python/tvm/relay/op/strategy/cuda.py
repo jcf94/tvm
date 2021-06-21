@@ -698,27 +698,6 @@ def conv1d_transpose_strategy_cuda(attrs, inputs, out_type, target):
     return strategy
 
 
-@matmul_strategy.register(["cuda", "gpu"])
-def matmul_strategy_cuda(attrs, inputs, out_type, target):
-    """matmul cuda strategy"""
-    strategy = _op.OpStrategy()
-    if target.kind.name == "cuda" and "cublas" in target.libs:
-        strategy.add_implementation(
-            wrap_compute_matmul(topi.cuda.matmul_cublas),
-            wrap_topi_schedule(topi.cuda.schedule_matmul_cublas),
-            name="matmul_cublas.cuda",
-            plevel=25,
-        )
-    if is_auto_scheduler_enabled():
-        strategy.add_implementation(
-            wrap_compute_matmul(topi.nn.matmul),
-            naive_schedule,
-            name="matmul.cuda",
-        )
-    return strategy
-
-
-@dense_strategy.register(["cuda", "gpu"])
 def dense_strategy_cuda(attrs, inputs, out_type, target):
     """dense cuda strategy"""
     strategy = _op.OpStrategy()
@@ -727,20 +706,20 @@ def dense_strategy_cuda(attrs, inputs, out_type, target):
     o, _ = get_const_tuple(weights.shape)
     if data.dtype == "int8" and weights.dtype == "int8" and out_type.dtype == "int32":
         strategy.add_implementation(
-            wrap_compute_dense(topi.cuda.dense_int8),
+            wrap_compute_matmul(topi.cuda.dense_int8),
             wrap_topi_schedule(topi.cuda.schedule_dense_int8),
             name="dense_int8.cuda",
         )
     else:
         strategy.add_implementation(
-            wrap_compute_dense(topi.cuda.dense_small_batch),
+            wrap_compute_matmul(topi.cuda.dense_small_batch),
             wrap_topi_schedule(topi.cuda.schedule_dense_small_batch),
             name="dense_small_batch.cuda",
         )
 
         with SpecializedCondition(b >= 32):
             strategy.add_implementation(
-                wrap_compute_dense(topi.cuda.dense_large_batch),
+                wrap_compute_matmul(topi.cuda.dense_large_batch),
                 wrap_topi_schedule(topi.cuda.schedule_dense_large_batch),
                 name="dense_large_batch.cuda",
                 plevel=5,
@@ -770,17 +749,37 @@ def dense_strategy_cuda(attrs, inputs, out_type, target):
                     )
                 ):
                     strategy.add_implementation(
-                        wrap_compute_dense(topi.cuda.dense_tensorcore),
+                        wrap_compute_matmul(topi.cuda.dense_tensorcore),
                         wrap_topi_schedule(topi.cuda.schedule_dense_tensorcore),
                         name="dense_tensorcore.cuda",
                         plevel=20,
                     )
+    return strategy
+
+
+@matmul_strategy.register(["cuda", "gpu"])
+def matmul_strategy_cuda(attrs, inputs, out_type, target):
+    """matmul cuda strategy"""
+
+    if not attrs.data_transposed and attrs.weight_transposed:
+        # Specialized schedule for dense(matmul-NT)
+        strategy = dense_strategy_cuda(attrs, inputs, out_type, target)
+    else:
+        strategy = _op.OpStrategy()
+
     if target.kind.name == "cuda" and "cublas" in target.libs:
         strategy.add_implementation(
-            wrap_compute_dense(topi.cuda.dense_cublas),
-            wrap_topi_schedule(topi.cuda.schedule_dense_cublas),
-            name="dense_cublas.cuda",
+            wrap_compute_matmul(topi.cuda.matmul_cublas),
+            wrap_topi_schedule(topi.cuda.schedule_matmul_cublas),
+            name="matmul_cublas.cuda",
             plevel=25,
+        )
+    if is_auto_scheduler_enabled():
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.nn.matmul),
+            naive_schedule,
+            name="matmul.cuda",
+            plevel=24,
         )
     return strategy
 

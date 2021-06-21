@@ -23,10 +23,9 @@ from tvm import relay
 from tvm import autotvm
 from .dense import _default_dense_pack_config
 from ..utils import get_const_tuple
-from ..nn import dense_alter_layout
+from ..nn import matmul_alter_layout
 
 
-@dense_alter_layout.register(["cpu", "arm_cpu"])
 def _alter_dense_layout(attrs, inputs, tinfos, out_type):
     target = tvm.target.Target.current(allow_none=False)
     dispatch_ctx = autotvm.task.DispatchContext.current
@@ -65,4 +64,11 @@ def _alter_dense_layout(attrs, inputs, tinfos, out_type):
             weight_transform = relay.layout_transform(inputs[1], "NK", weight_layout)
             return relay.nn.contrib_dense_pack(inputs[0], weight_transform, None, out_dtype)
 
+    return None
+
+
+@matmul_alter_layout.register(["cpu", "arm_cpu"])
+def _alter_matmul_layout(attrs, inputs, tinfos, out_type):
+    if not attrs.data_transposed and attrs.weight_transposed:
+        return _alter_dense_layout(attrs, inputs, tinfos, out_type)
     return None

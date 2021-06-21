@@ -597,23 +597,6 @@ def schedule_matmul(outs):
     return _default_schedule(outs, False)
 
 
-def schedule_dense(outs):
-    """Schedule for dense
-
-    Parameters
-    ----------
-    outs: Array of Tensor
-          The computation graph description of dense
-          in the format of an array of tensors.
-
-    Returns
-    -------
-    sch: Schedule
-        The computation schedule for the op.
-    """
-    return _default_schedule(outs, False)
-
-
 def schedule_pool(outs, layout):
     """Schedule for pool
 

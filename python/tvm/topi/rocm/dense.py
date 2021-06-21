@@ -100,9 +100,17 @@ def schedule_dense(cfg, outs):
     return s
 
 
-@autotvm.register_topi_compute("dense_rocblas.rocm")
-def dense_rocblas(cfg, data, weight, bias=None, out_dtype=None):
-    """Dense operator for rocm backend with cblas.
+@autotvm.register_topi_compute("matmul_rocblas.rocm")
+def matmul_rocblas(
+    cfg,
+    data,
+    weight,
+    bias=None,
+    out_dtype=None,
+    data_transposed=False,
+    weight_transposed=False
+):
+    """Matmul operator for rocm backend with cblas.
 
     Parameters
     ----------
@@ -126,7 +134,7 @@ def dense_rocblas(cfg, data, weight, bias=None, out_dtype=None):
     if out_dtype is None:
         out_dtype = data.dtype
     assert out_dtype == data.dtype, "Mixed precision not supported."
-    matmul = rocblas.matmul(data, weight, False, True)
+    matmul = rocblas.matmul(data, weight, data_transposed, weight_transposed)
     batch, in_dim = data.shape
     out_dim, _ = weight.shape
     cfg.add_flop(batch * in_dim * out_dim * 2)
@@ -137,7 +145,7 @@ def dense_rocblas(cfg, data, weight, bias=None, out_dtype=None):
     return matmul
 
 
-@autotvm.register_topi_schedule("dense_rocblas.rocm")
-def schedule_dense_rocblas(_, outs):
-    """Schedule for dense operator with rocm cblas"""
+@autotvm.register_topi_schedule("matmul_rocblas.rocm")
+def schedule_matmul_rocblas(_, outs):
+    """Schedule for matmul operator with rocm cblas"""
     return generic.schedule_extern(outs)

@@ -47,8 +47,6 @@ Expr MakeConcatenate(Expr data, int axis);
 Expr MakeMatmul(Expr data, Expr weight, IndexExpr units, DataType out_dtype, bool data_transposed,
                 bool weight_transposed);
 
-Expr MakeDense(Expr data, Expr weight, IndexExpr units, DataType out_dtype);
-
 Expr MakeBatchMatmul(Expr lhs, Expr rhs, DataType out_dtype);
 
 Expr MakeExpandDims(Expr data, int axis, int num_newaxis);

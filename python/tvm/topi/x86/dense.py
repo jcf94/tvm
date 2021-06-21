@@ -281,8 +281,8 @@ def schedule_dense_pack(cfg, outs):
     return s
 
 
-def dense_blas_common(cfg, data, weight, bias, out_dtype, lib):
-    """Compute dense using a BLAS library"""
+def matmul_blas_common(cfg, data, weight, bias, out_dtype, lib, data_transposed, weight_transposed):
+    """Compute matmul using a BLAS library"""
     M, K = get_const_tuple(data.shape)
     N, _ = get_const_tuple(weight.shape)
     if isinstance(M, int) and isinstance(K, int) and isinstance(N, int):
@@ -290,41 +290,61 @@ def dense_blas_common(cfg, data, weight, bias, out_dtype, lib):
     if data.dtype == "uint8" and weight.dtype == "int8" and out_dtype == "int32":
         if not hasattr(lib, "matmul_u8s8s32"):
             raise NotImplementedError(
-                f"Dense with {lib.__name__} for {data.dtype} is not supported "
+                f"Matmul with {lib.__name__} for {data.dtype} is not supported "
                 "(matmulu8s8s32 not imlemented)"
             )
-        C = lib.matmul_u8s8s32(data, weight, False, True, dtype=out_dtype)
+        C = lib.matmul_u8s8s32(data, weight, data_transposed, weight_transposed, dtype=out_dtype)
     elif data.dtype == "float32" or data.dtype == "float64":
-        C = lib.matmul(data, weight, False, True)
+        C = lib.matmul(data, weight, data_transposed, weight_transposed)
     else:
-        raise NotImplementedError(f"Dense with {lib.__name__} for {data.dtype} is not supported")
+        raise NotImplementedError(f"Matmul with {lib.__name__} for {data.dtype} is not supported")
 
     if bias is not None:
         C = te.compute(C.shape, lambda i, j: C[i, j] + bias[j].astype(out_dtype), tag=tag.BROADCAST)
     return C
 
 
-@autotvm.register_topi_compute("dense_cblas.x86")
-def dense_cblas(cfg, data, weight, bias=None, out_dtype=None):
-    """Compute dense using a cblas"""
-    return dense_blas_common(cfg, data, weight, bias, out_dtype, cblas)
+@autotvm.register_topi_compute("matmul_cblas.x86")
+def matmul_cblas(
+    cfg,
+    data,
+    weight,
+    bias=None,
+    out_dtype=None,
+    data_transposed=False,
+    weight_transposed=False
+):
+    """Compute matmul using a cblas"""
+    return matmul_blas_common(
+        cfg, data, weight, bias, out_dtype, cblas, data_transposed, weight_transposed,
+    )
 
 
-@autotvm.register_topi_schedule("dense_cblas.x86")
-def schedule_dense_cblas(_, outs):
-    """Create schedule for dense_cblas"""
+@autotvm.register_topi_schedule("matmul_cblas.x86")
+def schedule_matmul_cblas(_, outs):
+    """Create schedule for matmul_cblas"""
     return generic.schedule_extern(outs)
 
 
-@autotvm.register_topi_compute("dense_mkl.x86")
-def dense_mkl(cfg, data, weight, bias=None, out_dtype=None):
-    """Compute dense using mkl"""
-    return dense_blas_common(cfg, data, weight, bias, out_dtype, mkl)
+@autotvm.register_topi_compute("matmul_mkl.x86")
+def matmul_mkl(
+    cfg,
+    data,
+    weight,
+    bias=None,
+    out_dtype=None,
+    data_transposed=False,
+    weight_transposed=False
+):
+    """Compute matmul using mkl"""
+    return matmul_blas_common(
+        cfg, data, weight, bias, out_dtype, mkl, data_transposed, weight_transposed,
+    )
 
 
-@autotvm.register_topi_schedule("dense_mkl.x86")
-def schedule_dense_mkl(_, outs):
-    """Create schedule for dense_mkl"""
+@autotvm.register_topi_schedule("matmul_mkl.x86")
+def schedule_matmul_mkl(_, outs):
+    """Create schedule for matmul_mkl"""
     # return generic.schedule_extern(outs)
     s = te.create_schedule([x.op for x in outs])
     te.schedule.AutoInlineInjective(s)
@@ -335,18 +355,28 @@ def schedule_dense_mkl(_, outs):
 
     # traverse_inline(s, outs[0].op, _callback)
     for out in outs:
-        if "dense" not in out.op.name:
+        if "matmul" not in out.op.tag and "dense" not in out.op.tag:
             schedule_injective_from_existing(s, out)
     return s
 
 
-@autotvm.register_topi_compute("dense_mkldnn.x86")
-def dense_mkldnn(cfg, data, weight, bias=None, out_dtype=None):
-    """Compute dense using mkldnn"""
-    return dense_blas_common(cfg, data, weight, bias, out_dtype, mkldnn)
+@autotvm.register_topi_compute("matmul_mkldnn.x86")
+def matmul_mkldnn(
+    cfg,
+    data,
+    weight,
+    bias=None,
+    out_dtype=None,
+    data_transposed=False,
+    weight_transposed=False
+):
+    """Compute matmul using mkldnn"""
+    return matmul_blas_common(
+        cfg, data, weight, bias, out_dtype, mkldnn, data_transposed, weight_transposed,
+    )
 
 
-@autotvm.register_topi_schedule("dense_mkldnn.x86")
-def schedule_dense_mkldnn(_, outs):
-    """Create schedule for dense_mkldnn"""
+@autotvm.register_topi_schedule("matmul_mkldnn.x86")
+def schedule_matmul_mkldnn(_, outs):
+    """Create schedule for matmul_mkldnn"""
     return generic.schedule_extern(outs)

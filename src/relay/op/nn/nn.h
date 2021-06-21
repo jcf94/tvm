@@ -42,21 +42,16 @@ bool MatmulRel(const Array<Type>& types, int num_inputs, const Attrs& attrs,
   const auto* data = types[0].as<TensorTypeNode>();
   const auto* weight = types[1].as<TensorTypeNode>();
   if (data == nullptr) return false;
-  ICHECK(static_cast<int>(data->shape.size()) != 0);
 
-  bool data_transposed = false;
-  bool weight_transposed = true;
-  // Update transpose info if it is a MatmulAttrs
-  const MatmulAttrs* mattr = attrs.as<MatmulAttrs>();
-  if (mattr != nullptr) {
-    data_transposed = mattr->data_transposed;
-    weight_transposed = mattr->weight_transposed;
-  }
   const AttrType* param = attrs.as<AttrType>();
   ICHECK(param != nullptr);
 
+  ICHECK(static_cast<int>(data->shape.size()) != 0);
+
   const Array<tvm::PrimExpr>& dshape = data->shape;
   Array<tvm::PrimExpr> oshape = dshape;
+  bool data_transposed = param->data_transposed;
+  bool weight_transposed = param->weight_transposed;
   tvm::PrimExpr reduce = dshape[dshape.size() - 1];
   if (data_transposed) {
     reduce = dshape[dshape.size() - 2];

@@ -370,59 +370,74 @@ def conv1d_strategy_cpu(attrs, inputs, out_type, target):
     return strategy
 
 
-@dense_strategy.register("cpu")
 def dense_strategy_cpu(attrs, inputs, out_type, target):
-    """dense x86 strategy"""
+    """Dense x86 strategy. This is a specialized case for Matmul with data non-transposed and
+    weight transposed.
+    """
+
     strategy = _op.OpStrategy()
-    same_type = inputs[0].dtype == inputs[1].dtype == out_type.dtype
-    dtype = inputs[0].dtype
-    u8s8s32 = dtype == "uint8" and inputs[1].dtype == "int8" and out_type.dtype == "int32"
     strategy.add_implementation(
-        wrap_compute_dense(topi.x86.dense_nopack),
+        wrap_compute_matmul(topi.x86.dense_nopack),
         wrap_topi_schedule(topi.x86.schedule_dense_nopack),
         name="dense_nopack.x86",
         plevel=5,
     )
-
     strategy.add_implementation(
-        wrap_compute_dense(topi.x86.dense_pack),
+        wrap_compute_matmul(topi.x86.dense_pack),
         wrap_topi_schedule(topi.x86.schedule_dense_pack),
         name="dense_pack.x86",
         plevel=10,
     )
+    return strategy
+
+
+@matmul_strategy.register("cpu")
+def matmul_strategy_cpu(attrs, inputs, out_type, target):
+    """Matmul x86 strategy"""
+
+    if not attrs.data_transposed and attrs.weight_transposed:
+        # Specialized schedule for dense(matmul-NT)
+        strategy = dense_strategy_cpu(attrs, inputs, out_type, target)
+    else:
+        strategy = _op.OpStrategy()
+
+    same_type = inputs[0].dtype == inputs[1].dtype == out_type.dtype
+    dtype = inputs[0].dtype
+    u8s8s32 = dtype == "uint8" and inputs[1].dtype == "int8" and out_type.dtype == "int32"
 
     if is_auto_scheduler_enabled():
         strategy.add_implementation(
-            wrap_compute_dense(topi.nn.dense, need_auto_scheduler_layout=True),
+            wrap_compute_matmul(topi.nn.matmul, need_auto_scheduler_layout=True),
             naive_schedule,
-            name="dense.generic",
-            plevel=11,
+            name="matmul.generic",
+            plevel=12,
         )
 
     if "cblas" in target.libs:
         with SpecializedCondition(same_type and dtype in ["float32", "float64"]):
             strategy.add_implementation(
-                wrap_compute_dense(topi.x86.dense_cblas),
-                wrap_topi_schedule(topi.x86.schedule_dense_cblas),
-                name="dense_cblas.x86",
+                wrap_compute_matmul(topi.x86.matmul_cblas),
+                wrap_topi_schedule(topi.x86.schedule_matmul_cblas),
+                name="matmul_cblas.x86",
                 plevel=13,
             )
     if "mkl" in target.libs:
         with SpecializedCondition(same_type and dtype in ["float32", "float64"] or u8s8s32):
             strategy.add_implementation(
-                wrap_compute_dense(topi.x86.dense_mkl),
-                wrap_topi_schedule(topi.x86.schedule_dense_mkl),
-                name="dense_mkl.x86",
+                wrap_compute_matmul(topi.x86.matmul_mkl),
+                wrap_topi_schedule(topi.x86.schedule_matmul_mkl),
+                name="matmul_mkl.x86",
                 plevel=14,
             )
     if "mkldnn" in target.libs:
         with SpecializedCondition(same_type and dtype == "float32"):
             strategy.add_implementation(
-                wrap_compute_dense(topi.x86.dense_mkldnn),
-                wrap_topi_schedule(topi.x86.schedule_dense_mkldnn),
-                name="dense_mkldnn.x86",
+                wrap_compute_matmul(topi.x86.matmul_mkldnn),
+                wrap_topi_schedule(topi.x86.schedule_matmul_mkldnn),
+                name="matmul_mkldnn.x86",
                 plevel=15,
             )
+
     return strategy
 
 
@@ -431,7 +446,7 @@ def dense_pack_strategy_cpu(attrs, inputs, out_type, target):
     """dense_pack x86 strategy"""
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_dense(topi.x86.dense_pack),
+        wrap_compute_matmul(topi.x86.dense_pack),
         wrap_topi_schedule(topi.x86.schedule_dense_pack),
         name="dense_pack.x86",
     )

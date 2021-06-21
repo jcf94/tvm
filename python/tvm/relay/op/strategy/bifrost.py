@@ -108,12 +108,23 @@ def conv2d_winograd_without_weight_transfrom_strategy_bifrost(attrs, inputs, out
     return strategy
 
 
-@dense_strategy.register("bifrost")
 def dense_strategy_bifrost(attrs, inputs, out_type, target):
     """dense mali(bifrost) strategy"""
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_dense(topi.bifrost.dense),
+        wrap_compute_matmul(topi.bifrost.dense),
+        wrap_topi_schedule(topi.bifrost.schedule_dense),
+        name="dense.bifrost",
+    )
+    return strategy
+
+
+@matmul_strategy.register("bifrost")
+def matmul_strategy_bifrost(attrs, inputs, out_type, target):
+    """matmul mali(bifrost) strategy"""
+    strategy = _op.OpStrategy()
+    strategy.add_implementation(
+        wrap_compute_matmul(topi.bifrost.dense),
         wrap_topi_schedule(topi.bifrost.schedule_dense),
         name="dense.bifrost",
     )

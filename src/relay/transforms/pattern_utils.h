@@ -659,7 +659,7 @@ static inline Expr Conv2D(Expr data, Expr weight, Array<IndexExpr> strides,
 }
 
 static inline Expr Dense(Expr data, Expr weight, IndexExpr units, DataType out_dtype) {
-  return MakeDense(data, weight, units, out_dtype);
+  return MakeMatmul(data, weight, units, out_dtype, false, true);
 }
 
 static inline Expr Sum(Expr data, Array<Integer> axis, bool keepdims, bool exclude) {

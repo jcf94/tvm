@@ -129,29 +129,6 @@ def matmul(
     return mat
 
 
-@tvm.target.generic_func
-def matmul_legalize(attrs, inputs, types):
-    """Legalizes matmul op.
-
-    Parameters
-    ----------
-    attrs : tvm.ir.Attrs
-        Attributes of current dense
-    inputs : list of tvm.relay.Expr
-        The args of the Relay expr to be legalized
-    types : list of types
-        List of input and output types
-
-    Returns
-    -------
-    result : tvm.relay.Expr
-        The legalized expr
-    """
-    # not to change by default
-    # pylint: disable=unused-argument
-    return None
-
-
 def dense(data, weight, bias=None, out_dtype=None, auto_scheduler_rewritten_layout=""):
     """The default implementation of dense in topi.
 
@@ -181,13 +158,13 @@ def dense(data, weight, bias=None, out_dtype=None, auto_scheduler_rewritten_layo
 
 
 @tvm.target.generic_func
-def dense_legalize(attrs, inputs, types):
+def matmul_legalize(attrs, inputs, types):
     """Legalizes dense op.
 
     Parameters
     ----------
     attrs : tvm.ir.Attrs
-        Attributes of current dense
+        Attributes of current matmul
     inputs : list of tvm.relay.Expr
         The args of the Relay expr to be legalized
     types : list of types
@@ -250,13 +227,13 @@ def dense_pack(data, weight, bias=None, out_dtype=None):
 
 
 @tvm.target.generic_func
-def dense_alter_layout(attrs, inputs, tinfos, out_type):
+def matmul_alter_layout(attrs, inputs, tinfos, out_type):
     """Change dense layout.
 
     Parameters
     ----------
     attrs : tvm.ir.Attrs
-        Attributes of current convolution
+        Attributes of current matmul
     inputs : tvm.relay.Expr
         Grouped input symbols
     tinfos : list

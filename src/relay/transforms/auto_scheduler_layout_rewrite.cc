@@ -89,8 +89,6 @@ class FuncMutator : public ExprMutator {
         updated_attrs = CopyAttrsWithNewLayout(pattr, new_layout);
       } else if (auto pattr = call->attrs.as<MatmulAttrs>()) {
         updated_attrs = CopyAttrsWithNewLayout(pattr, new_layout);
-      } else if (auto pattr = call->attrs.as<DenseAttrs>()) {
-        updated_attrs = CopyAttrsWithNewLayout(pattr, new_layout);
       } else if (auto pattr = call->attrs.as<BatchMatmulAttrs>()) {
         updated_attrs = CopyAttrsWithNewLayout(pattr, new_layout);
       } else {
@@ -107,7 +105,7 @@ class FuncMutator : public ExprMutator {
 
   std::vector<std::string> target_ops_{
       "nn.conv2d", "nn.conv3d", "nn.contrib_conv2d_winograd_without_weight_transform",
-      "nn.matmul", "nn.dense",  "nn.batch_matmul"};
+      "nn.matmul", "nn.batch_matmul"};
 };
 
 Expr AutoSchedulerLayoutRewriter::VisitExpr_(const CallNode* n) {
@@ -170,8 +168,6 @@ TVM_REGISTER_GLOBAL("relay.attrs.get_auto_scheduler_rewritten_layout")
         return attrs.as<Conv3DAttrs>()->auto_scheduler_rewritten_layout;
       } else if (attrs->IsInstance<MatmulAttrs>()) {
         return attrs.as<MatmulAttrs>()->auto_scheduler_rewritten_layout;
-      } else if (attrs->IsInstance<DenseAttrs>()) {
-        return attrs.as<DenseAttrs>()->auto_scheduler_rewritten_layout;
       } else if (attrs->IsInstance<BatchMatmulAttrs>()) {
         return attrs.as<BatchMatmulAttrs>()->auto_scheduler_rewritten_layout;
       } else {

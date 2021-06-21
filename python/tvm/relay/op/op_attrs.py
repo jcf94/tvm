@@ -69,11 +69,6 @@ class MatmulAttrs(Attrs):
     """Attributes for nn.matmul"""
 
 
-@tvm._ffi.register_object("relay.attrs.DenseAttrs")
-class DenseAttrs(Attrs):
-    """Attributes for nn.dense"""
-
-
 @tvm._ffi.register_object("relay.attrs.SoftmaxAttrs")
 class SoftmaxAttrs(Attrs):
     """Attributes for nn.softmax"""

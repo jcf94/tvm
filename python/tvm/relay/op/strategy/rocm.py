@@ -182,22 +182,38 @@ def conv2d_strategy_rocm(attrs, inputs, out_type, target):
     return strategy
 
 
-@dense_strategy.register("rocm")
 def dense_strategy_rocm(attrs, inputs, out_type, target):
     """Dense strategy for ROCM"""
     assert len(inputs[0].shape) == 2 and len(inputs[1].shape) == 2, "Only support 2-dim dense"
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_dense(topi.rocm.dense),
+        wrap_compute_matmul(topi.rocm.dense),
         wrap_topi_schedule(topi.rocm.schedule_dense),
         name="dense.rocm",
     )
+    return strategy
+
+
+@matmul_strategy.register("rocm")
+def matmul_strategy_rocm(attrs, inputs, out_type, target):
+    """Matmul strategy for ROCM"""
+
+    if not attrs.data_transposed and attrs.weight_transposed:
+        # Specialized schedule for dense(matmul-NT)
+        strategy = dense_strategy_rocm(attrs, inputs, out_type, target)
+    else:
+        strategy = _op.OpStrategy()
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.rocm.matmul),
+            wrap_topi_schedule(topi.rocm.schedule_dense),
+            name="matmul.rocm",
+        )
     if target.kind.name == "rocm" and "rocblas" in target.libs:
         assert out_type.dtype == inputs[0].dtype, "Mixed precision not supported."
         strategy.add_implementation(
-            wrap_compute_dense(topi.rocm.dense_rocblas),
-            wrap_topi_schedule(topi.rocm.schedule_dense_rocblas),
-            name="dense_rocblas.rocm",
+            wrap_compute_matmul(topi.rocm.matmul_rocblas),
+            wrap_topi_schedule(topi.rocm.schedule_matmul_rocblas),
+            name="matmul_rocblas.rocm",
             plevel=15,
         )
     return strategy

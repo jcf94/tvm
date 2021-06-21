@@ -1540,7 +1540,7 @@ def dense(data, weight, units=None, out_dtype=""):
     result : tvm.relay.Expr
         The computed result.
     """
-    return _make.dense(data, weight, units, out_dtype)
+    return matmul(data, weight, units, out_dtype, False, True)
 
 
 def contrib_dense_pack(data, weight, units=None, out_dtype=""):

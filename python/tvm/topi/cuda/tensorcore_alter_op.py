@@ -96,7 +96,6 @@ def _batch_matmul_legalize(attrs, inputs, arg_types):
     return None
 
 
-@nn.dense_legalize.register("cuda")
 def _dense_legalize(attrs, inputs, arg_types):
     """Legalizes dense op.
 
@@ -168,6 +167,29 @@ def _dense_legalize(attrs, inputs, arg_types):
         else:
             out = out_
         return out
+    return None
+
+
+@nn.matmul_legalize.register("cuda")
+def _matmul_legalize(attrs, inputs, arg_types):
+    """Legalizes dense op.
+
+    Parameters
+    ----------
+    attrs : tvm.ir.Attrs
+        Attributes of current convolution
+    inputs : list of tvm.relay.Expr
+        The args of the Relay expr to be legalized
+    types : list of types
+        List of input and output types
+
+    Returns
+    -------
+    result : tvm.relay.Expr
+        The legalized expr
+    """
+    if not attrs.data_transposed and attrs.weight_transposed:
+        return _dense_legalize(attrs, inputs, arg_types)
     return None
 
 

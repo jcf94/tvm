@@ -30,7 +30,8 @@ from ..utils import traverse_inline, get_const_tuple
 logger = logging.getLogger("topi")
 
 
-def _matmul_cublas_common(
+@autotvm.register_topi_compute("matmul_cublas.cuda")
+def matmul_cublas(
     cfg,
     data,
     weight,
@@ -39,6 +40,7 @@ def _matmul_cublas_common(
     data_transposed=False,
     weight_transposed=False,
 ):
+    """Matmul operator on CUDA with CUBLAS"""
     assert len(data.shape) == 2 and len(weight.shape) == 2, "only support 2-dim matmul"
     if bias is not None:
         assert len(bias.shape) == 1
@@ -57,37 +59,9 @@ def _matmul_cublas_common(
     return matmul
 
 
-@autotvm.register_topi_compute("matmul_cublas.cuda")
-def matmul_cublas(
-    cfg,
-    data,
-    weight,
-    bias=None,
-    out_dtype=None,
-    data_transposed=False,
-    weight_transposed=False,
-):
-    """Matmul operator on CUDA with CUBLAS"""
-    return _matmul_cublas_common(
-        cfg, data, weight, bias, out_dtype, data_transposed, weight_transposed
-    )
-
-
 @autotvm.register_topi_schedule("matmul_cublas.cuda")
 def schedule_matmul_cublas(_, outs):
     """Schedule matmul operator using CUBLAS"""
-    return generic.schedule_extern(outs)
-
-
-@autotvm.register_topi_compute("dense_cublas.cuda")
-def dense_cublas(cfg, data, weight, bias=None, out_dtype=None):
-    """Dense operator on CUDA with CUBLAS"""
-    return _matmul_cublas_common(cfg, data, weight, bias, out_dtype, False, True)
-
-
-@autotvm.register_topi_schedule("dense_cublas.cuda")
-def schedule_dense_cublas(_, outs):
-    """Schedule dense operator using CUBLAS"""
     return generic.schedule_extern(outs)
 
 

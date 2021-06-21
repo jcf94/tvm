@@ -172,20 +172,36 @@ def conv2d_winograd_without_weight_transfrom_strategy_mali(attrs, inputs, out_ty
     return strategy
 
 
-@dense_strategy.register("mali")
 def dense_strategy_mali(attrs, inputs, out_type, target):
     """dense mali strategy"""
     strategy = _op.OpStrategy()
     if not is_auto_scheduler_enabled():
         strategy.add_implementation(
-            wrap_compute_dense(topi.mali.dense),
+            wrap_compute_matmul(topi.mali.dense),
             wrap_topi_schedule(topi.mali.schedule_dense),
             name="dense.mali",
         )
     else:
         strategy.add_implementation(
-            wrap_compute_dense(topi.nn.dense, need_auto_scheduler_layout=True),
+            wrap_compute_matmul(topi.nn.dense, need_auto_scheduler_layout=True),
             naive_schedule,
             name="dense.mali",
         )
+    return strategy
+
+
+@matmul_strategy.register("mali")
+def matmul_strategy_mali(attrs, inputs, out_type, target):
+    """dense mali strategy"""
+
+    if not attrs.data_transposed and attrs.weight_transposed:
+        # Specialized schedule for dense(matmul-NT)
+        return dense_strategy_mali(attrs, inputs, out_type, target)
+
+    strategy = _op.OpStrategy()
+    strategy.add_implementation(
+        wrap_compute_matmul(topi.nn.dense, need_auto_scheduler_layout=True),
+        naive_schedule,
+        name="matmul.mali",
+    )
     return strategy

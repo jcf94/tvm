@@ -78,36 +78,10 @@ reg.register_strategy("nn.matmul", strategy.matmul_strategy)
 reg.register_pattern("nn.matmul", reg.OpPattern.OUT_ELEMWISE_FUSABLE)
 
 
-@reg.register_legalize("nn.dense")
-def legalize_dense(attrs, inputs, types):
-    """Legalize dense op.
-
-    Parameters
-    ----------
-    attrs : tvm.ir.Attrs
-        Attributes of current dense
-    inputs : list of tvm.relay.Expr
-        The args of the Relay expr to be legalized
-    types : list of types
-        List of input and output types
-
-    Returns
-    -------
-    result : tvm.relay.Expr
-        The legalized expr
-    """
-    return topi.nn.dense_legalize(attrs, inputs, types)
-
-
-# dense
-reg.register_strategy("nn.dense", strategy.dense_strategy)
-reg.register_pattern("nn.dense", reg.OpPattern.OUT_ELEMWISE_FUSABLE)
-
-
-@reg.register_alter_op_layout("nn.dense")
-def alter_op_layout_dense(attrs, inputs, tinfos, out_type):
+@reg.register_alter_op_layout("nn.matmul")
+def alter_op_layout_matmul(attrs, inputs, tinfos, out_type):
     """Alternate the layout of dense"""
-    return topi.nn.dense_alter_layout(attrs, inputs, tinfos, out_type)
+    return topi.nn.matmul_alter_layout(attrs, inputs, tinfos, out_type)
 
 
 # dense_pack
@@ -1199,15 +1173,6 @@ def matmul_shape_func(attrs, inputs, _):
             expr.IntImm("bool", attrs.weight_transposed),
         )
     ]
-    return ret
-
-
-@reg.register_shape_func("nn.dense", False)
-def dense_shape_func(attrs, inputs, _):
-    """
-    Shape function for dense op.
-    """
-    ret = [_matmul_shape_func(inputs[0], inputs[1], expr.IntImm("bool", 0), expr.IntImm("bool", 1))]
     return ret
 
 
