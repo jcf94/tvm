@@ -17,6 +17,7 @@
 """Definition of HLS operator strategy."""
 # pylint: disable=invalid-name,unused-argument,wildcard-import,unused-wildcard-import
 from tvm import topi
+from tvm.auto_scheduler.relay_integration import is_auto_scheduler_enabled
 from .generic import *
 from .. import op as _op
 
@@ -161,7 +162,7 @@ def dense_strategy_hls(attrs, inputs, out_type, target):
     """dense hls strategy"""
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_matmul(topi.nn.dense),
+        wrap_compute_dense(topi.nn.dense),
         wrap_topi_schedule(topi.hls.schedule_dense),
         name="dense.hls",
     )
@@ -174,14 +175,18 @@ def matmul_strategy_hls(attrs, inputs, out_type, target):
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)
-        return dense_strategy_hls(attrs, inputs, out_type, target)
+        strategy = dense_strategy_hls(attrs, inputs, out_type, target)
+    else:
+        logger.warning("Matmul other than NT format is not optimized for hls.")
+        strategy = _op.OpStrategy()
 
-    strategy = _op.OpStrategy()
-    strategy.add_implementation(
-        wrap_compute_matmul(topi.nn.matmul),
-        wrap_topi_schedule(topi.hls.schedule_matmul),
-        name="matmul.hls",
-    )
+    if is_auto_scheduler_enabled():
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.nn.matmul),
+            naive_schedule,
+            name="matmul.hls",
+            plevel=11,
+        )
     return strategy
 
 

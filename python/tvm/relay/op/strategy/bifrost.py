@@ -18,6 +18,7 @@
 # pylint: disable=invalid-name,unused-argument,wildcard-import,unused-wildcard-import
 import re
 from tvm import topi
+from tvm.auto_scheduler.relay_integration import is_auto_scheduler_enabled
 from .generic import *
 from .. import op as _op
 
@@ -112,7 +113,7 @@ def dense_strategy_bifrost(attrs, inputs, out_type, target):
     """dense mali(bifrost) strategy"""
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_matmul(topi.bifrost.dense),
+        wrap_compute_dense(topi.bifrost.dense),
         wrap_topi_schedule(topi.bifrost.schedule_dense),
         name="dense.bifrost",
     )
@@ -122,10 +123,19 @@ def dense_strategy_bifrost(attrs, inputs, out_type, target):
 @matmul_strategy.register("bifrost")
 def matmul_strategy_bifrost(attrs, inputs, out_type, target):
     """matmul mali(bifrost) strategy"""
-    strategy = _op.OpStrategy()
-    strategy.add_implementation(
-        wrap_compute_matmul(topi.bifrost.dense),
-        wrap_topi_schedule(topi.bifrost.schedule_dense),
-        name="dense.bifrost",
-    )
+
+    if not attrs.data_transposed and attrs.weight_transposed:
+        # Specialized schedule for dense(matmul-NT)
+        strategy = dense_strategy_bifrost(attrs, inputs, out_type, target)
+    else:
+        logger.warning("Matmul other than NT format is not optimized for bifrost.")
+        strategy = _op.OpStrategy()
+
+    if is_auto_scheduler_enabled():
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.nn.matmul),
+            naive_schedule,
+            name="matmul.bifrost",
+            plevel=11,
+        )
     return strategy

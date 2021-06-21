@@ -407,12 +407,13 @@ def matmul_strategy_cpu(attrs, inputs, out_type, target):
     dtype = inputs[0].dtype
     u8s8s32 = dtype == "uint8" and inputs[1].dtype == "int8" and out_type.dtype == "int32"
 
-    strategy.add_implementation(
-        wrap_compute_matmul(topi.nn.matmul, need_auto_scheduler_layout=True),
-        naive_schedule,
-        name="matmul.generic",
-        plevel=12,
-    )
+    if is_auto_scheduler_enabled():
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.nn.matmul, need_auto_scheduler_layout=True),
+            naive_schedule,
+            name="matmul.generic",
+            plevel=11,
+        )
 
     if "cblas" in target.libs:
         with SpecializedCondition(same_type and dtype in ["float32", "float64"]):

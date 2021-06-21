@@ -175,18 +175,11 @@ def conv2d_winograd_without_weight_transfrom_strategy_mali(attrs, inputs, out_ty
 def dense_strategy_mali(attrs, inputs, out_type, target):
     """dense mali strategy"""
     strategy = _op.OpStrategy()
-    if not is_auto_scheduler_enabled():
-        strategy.add_implementation(
-            wrap_compute_matmul(topi.mali.dense),
-            wrap_topi_schedule(topi.mali.schedule_dense),
-            name="dense.mali",
-        )
-    else:
-        strategy.add_implementation(
-            wrap_compute_matmul(topi.nn.dense, need_auto_scheduler_layout=True),
-            naive_schedule,
-            name="dense.mali",
-        )
+    strategy.add_implementation(
+        wrap_compute_dense(topi.mali.dense),
+        wrap_topi_schedule(topi.mali.schedule_dense),
+        name="dense.mali",
+    )
     return strategy
 
 
@@ -196,12 +189,16 @@ def matmul_strategy_mali(attrs, inputs, out_type, target):
 
     if not attrs.data_transposed and attrs.weight_transposed:
         # Specialized schedule for dense(matmul-NT)
-        return dense_strategy_mali(attrs, inputs, out_type, target)
+        strategy = dense_strategy_mali(attrs, inputs, out_type, target)
+    else:
+        logger.warning("Matmul other than NT format is not optimized for mali.")
+        strategy = _op.OpStrategy()
 
-    strategy = _op.OpStrategy()
-    strategy.add_implementation(
-        wrap_compute_matmul(topi.nn.dense, need_auto_scheduler_layout=True),
-        naive_schedule,
-        name="matmul.mali",
-    )
+    if is_auto_scheduler_enabled():
+        strategy.add_implementation(
+            wrap_compute_matmul(topi.nn.dense, need_auto_scheduler_layout=True),
+            naive_schedule,
+            name="matmul.mali",
+            plevel=11,
+        )
     return strategy

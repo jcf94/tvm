@@ -202,11 +202,15 @@ def matmul_strategy_rocm(attrs, inputs, out_type, target):
         # Specialized schedule for dense(matmul-NT)
         strategy = dense_strategy_rocm(attrs, inputs, out_type, target)
     else:
+        logger.warning("Matmul other than NT format is not optimized for rocm.")
         strategy = _op.OpStrategy()
+
+    if is_auto_scheduler_enabled():
         strategy.add_implementation(
             wrap_compute_matmul(topi.rocm.matmul),
             wrap_topi_schedule(topi.rocm.schedule_dense),
             name="matmul.rocm",
+            plevel=11,
         )
     if target.kind.name == "rocm" and "rocblas" in target.libs:
         assert out_type.dtype == inputs[0].dtype, "Mixed precision not supported."
