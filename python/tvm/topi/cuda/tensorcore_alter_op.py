@@ -174,7 +174,7 @@ def _dense_legalize(attrs, inputs, arg_types):
 
 @nn.matmul_legalize.register("cuda")
 def _matmul_legalize(attrs, inputs, arg_types):
-    """Legalizes dense op.
+    """Legalizes matmul op.
 
     Parameters
     ----------
