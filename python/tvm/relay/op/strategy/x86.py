@@ -377,13 +377,14 @@ def dense_strategy_cpu(attrs, inputs, out_type, target):
 
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_matmul(topi.x86.dense_nopack),
+        wrap_compute_dense(topi.x86.dense_nopack),
         wrap_topi_schedule(topi.x86.schedule_dense_nopack),
         name="dense_nopack.x86",
         plevel=5,
     )
+
     strategy.add_implementation(
-        wrap_compute_matmul(topi.x86.dense_pack),
+        wrap_compute_dense(topi.x86.dense_pack),
         wrap_topi_schedule(topi.x86.schedule_dense_pack),
         name="dense_pack.x86",
         plevel=10,
@@ -399,19 +400,19 @@ def matmul_strategy_cpu(attrs, inputs, out_type, target):
         # Specialized schedule for dense(matmul-NT)
         strategy = dense_strategy_cpu(attrs, inputs, out_type, target)
     else:
+        logger.warning("Matmul not in NT format is not optimized for x86.")
         strategy = _op.OpStrategy()
 
     same_type = inputs[0].dtype == inputs[1].dtype == out_type.dtype
     dtype = inputs[0].dtype
     u8s8s32 = dtype == "uint8" and inputs[1].dtype == "int8" and out_type.dtype == "int32"
 
-    if is_auto_scheduler_enabled():
-        strategy.add_implementation(
-            wrap_compute_matmul(topi.nn.matmul, need_auto_scheduler_layout=True),
-            naive_schedule,
-            name="matmul.generic",
-            plevel=12,
-        )
+    strategy.add_implementation(
+        wrap_compute_matmul(topi.nn.matmul, need_auto_scheduler_layout=True),
+        naive_schedule,
+        name="matmul.generic",
+        plevel=12,
+    )
 
     if "cblas" in target.libs:
         with SpecializedCondition(same_type and dtype in ["float32", "float64"]):
@@ -437,7 +438,6 @@ def matmul_strategy_cpu(attrs, inputs, out_type, target):
                 name="matmul_mkldnn.x86",
                 plevel=15,
             )
-
     return strategy
 
 
@@ -446,7 +446,7 @@ def dense_pack_strategy_cpu(attrs, inputs, out_type, target):
     """dense_pack x86 strategy"""
     strategy = _op.OpStrategy()
     strategy.add_implementation(
-        wrap_compute_matmul(topi.x86.dense_pack),
+        wrap_compute_dense(topi.x86.dense_pack),
         wrap_topi_schedule(topi.x86.schedule_dense_pack),
         name="dense_pack.x86",
     )

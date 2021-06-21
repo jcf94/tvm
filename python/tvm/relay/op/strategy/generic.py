@@ -712,7 +712,22 @@ def dilation2d_strategy(attrs, inputs, out_type, target):
     return strategy
 
 
-# matmul
+# matmul & dense
+def wrap_compute_dense(topi_compute, need_auto_scheduler_layout=False):
+    """wrap dense topi compute"""
+
+    def _compute_dense(attrs, inputs, out_type):
+        """Compute definition of dense"""
+        out_dtype = attrs.out_dtype
+        out_dtype = inputs[0].dtype if out_dtype == "" else out_dtype
+        args = [inputs[0], inputs[1], None, out_dtype]
+        if need_auto_scheduler_layout:
+            args.append(get_auto_scheduler_rewritten_layout(attrs))
+        return [topi_compute(*args)]
+
+    return _compute_dense
+
+
 def wrap_compute_matmul(topi_compute, need_auto_scheduler_layout=False):
     """wrap matmul topi compute"""
 

@@ -80,7 +80,7 @@ def matmul(
         out_dim, red_dim = weight.shape
     else:
         red_dim, out_dim = weight.shape
-    assert in_dim == red_dim
+    assert in_dim == red_dim or isinstance(in_dim, tvm.tir.Var) or isinstance(red_dim, tvm.tir.Var)
 
     k = te.reduce_axis((0, in_dim), name="k")
     if (data_transposed, weight_transposed) == (True, True):
